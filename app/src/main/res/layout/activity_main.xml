@@ -14,44 +14,76 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Single-line top bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <ImageView
+                android:id="@+id/ivHeaderLogo"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:contentDescription="FareSwoop logo"
+                android:src="@drawable/ic_launcher_foreground" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
                 android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:text="FareSwoop"
                 android:textColor="#0F172A"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnModeHome"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="Home"
+                android:textSize="12sp" />
 
             <Button
                 android:id="@+id/btnModeSearch"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Search" />
+                android:layout_marginStart="4dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="Search"
+                android:textSize="12sp" />
 
             <Button
                 android:id="@+id/btnModeWatchlist"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="Watchlist" />
+                android:layout_marginStart="4dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="Watch"
+                android:textSize="12sp" />
 
             <Button
                 android:id="@+id/btnProStatus"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="Go Pro" />
+                android:layout_marginStart="4dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="10dp"
+                android:text="Pro"
+                android:textSize="12sp" />
         </LinearLayout>
 
+        <!-- Summary bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -78,6 +110,76 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- Landing Homepage View -->
+        <LinearLayout
+            android:id="@+id/layoutHomeSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="#FFFFFF"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <ImageView
+                android:id="@+id/ivHeroLogo"
+                android:layout_width="84dp"
+                android:layout_height="84dp"
+                android:layout_gravity="center_horizontal"
+                android:contentDescription="FareSwoop brand logo"
+                android:src="@drawable/ic_launcher_foreground" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:text="What do you want to search for?"
+                android:textColor="#0F172A"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="Pick a travel category to start comparing prices and tracking price drops. Swipe right anytime to return here."
+                android:textColor="#475569"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnHomeStartCars"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Search Car Hire" />
+
+            <Button
+                android:id="@+id/btnHomeStartHotels"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Search Hotels" />
+
+            <Button
+                android:id="@+id/btnHomeStartFlights"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Search Flights" />
+
+            <Button
+                android:id="@+id/btnHomeOpenWatchlist"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="View Tracked Prices" />
+        </LinearLayout>
+
+        <!-- Post-booking prompt -->
         <LinearLayout
             android:id="@+id/cardPostBookingBanner"
             android:layout_width="match_parent"
@@ -117,12 +219,14 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Search Section -->
         <LinearLayout
             android:id="@+id/layoutSearchSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupCategory"
@@ -168,7 +272,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:completionThreshold="1"
-                android:hint="Type pick-up town or city (e.g. Alicante)"
+                android:hint="Type airport, town or city (e.g. Alicante)"
                 android:inputType="text" />
 
             <Button
@@ -287,6 +391,7 @@
                 android:nestedScrollingEnabled="false" />
         </LinearLayout>
 
+        <!-- Watchlist Section -->
         <LinearLayout
             android:id="@+id/layoutWatchlistSection"
             android:layout_width="match_parent"
