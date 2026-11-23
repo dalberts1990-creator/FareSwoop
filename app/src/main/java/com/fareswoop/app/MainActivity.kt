@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -55,8 +56,9 @@ class MainActivity : AppCompatActivity() {
         set(Calendar.MINUTE, 0)
     }
 
-    private val displayFormatter = SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.UK)
-    private val compactDateFormatter = SimpleDateFormat("dd MMM HH:mm", Locale.UK)
+    private val dateTimeFormatter = SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.UK)
+    private val dateOnlyFormatter = SimpleDateFormat("dd MMM yyyy", Locale.UK)
+    private val compactDateFormatter = SimpleDateFormat("dd MMM", Locale.UK)
 
     private val requestNotifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -86,8 +88,10 @@ class MainActivity : AppCompatActivity() {
         refreshProAndAdsState()
         setupDateTimePickers()
         setupCategoryTabs()
+        setupFilterListeners()
         setupLists()
         setupSearchControls()
+        applyCategoryState("CAR", runSearch = true)
         observeWatchlist()
     }
 
@@ -133,22 +137,54 @@ class MainActivity : AppCompatActivity() {
         updateDateTimeButtons()
 
         binding.btnPickCollectionDateTime.setOnClickListener {
-            pickCalendarThenTime(collectCalendar) {
-                if (returnCalendar.before(collectCalendar)) {
-                    returnCalendar.timeInMillis = collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
+            if (selectedCategory == "HOTEL") {
+                pickDateOnly(collectCalendar) {
+                    if (returnCalendar.before(collectCalendar)) {
+                        returnCalendar.timeInMillis =
+                            collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
+                    }
+                    updateDateTimeButtons()
                 }
-                updateDateTimeButtons()
+            } else {
+                pickDateAndTime(collectCalendar) {
+                    if (returnCalendar.before(collectCalendar)) {
+                        returnCalendar.timeInMillis =
+                            collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
+                    }
+                    updateDateTimeButtons()
+                }
             }
         }
 
         binding.btnPickReturnDateTime.setOnClickListener {
-            pickCalendarThenTime(returnCalendar) {
-                updateDateTimeButtons()
+            if (selectedCategory == "HOTEL") {
+                pickDateOnly(returnCalendar) {
+                    updateDateTimeButtons()
+                }
+            } else {
+                pickDateAndTime(returnCalendar) {
+                    updateDateTimeButtons()
+                }
             }
         }
     }
 
-    private fun pickCalendarThenTime(target: Calendar, onDone: () -> Unit) {
+    private fun pickDateOnly(target: Calendar, onDone: () -> Unit) {
+        DatePickerDialog(
+            this,
+            { _, year, month, dayOfMonth ->
+                target.set(Calendar.YEAR, year)
+                target.set(Calendar.MONTH, month)
+                target.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                onDone()
+            },
+            target.get(Calendar.YEAR),
+            target.get(Calendar.MONTH),
+            target.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    private fun pickDateAndTime(target: Calendar, onDone: () -> Unit) {
         DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
@@ -175,14 +211,150 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateDateTimeButtons() {
-        binding.btnPickCollectionDateTime.text =
-            "Collect: ${displayFormatter.format(collectCalendar.time)}"
-        binding.btnPickReturnDateTime.text =
-            "Return: ${displayFormatter.format(returnCalendar.time)}"
+        when (selectedCategory) {
+            "HOTEL" -> {
+                binding.btnPickCollectionDateTime.text =
+                    "Check-in: ${dateOnlyFormatter.format(collectCalendar.time)}"
+                binding.btnPickReturnDateTime.text =
+                    "Check-out: ${dateOnlyFormatter.format(returnCalendar.time)}"
+            }
+            "FLIGHT" -> {
+                binding.btnPickCollectionDateTime.text =
+                    "Outbound: ${dateTimeFormatter.format(collectCalendar.time)}"
+                binding.btnPickReturnDateTime.text =
+                    "Inbound: ${dateTimeFormatter.format(returnCalendar.time)}"
+            }
+            else -> {
+                binding.btnPickCollectionDateTime.text =
+                    "Collect: ${dateTimeFormatter.format(collectCalendar.time)}"
+                binding.btnPickReturnDateTime.text =
+                    "Return: ${dateTimeFormatter.format(returnCalendar.time)}"
+            }
+        }
     }
 
     private fun getFormattedDateRange(): String {
         return "${compactDateFormatter.format(collectCalendar.time)} → ${compactDateFormatter.format(returnCalendar.time)}"
+    }
+
+    private fun setSuggestionsForCategory(category: String) {
+        when (category) {
+            "FLIGHT" -> {
+                binding.etFlightOrigin.setAdapter(
+                    ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, TravelSearchRepository.flightAirports)
+                )
+                binding.etPrimaryLocation.setAdapter(
+                    ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, TravelSearchRepository.flightAirports)
+                )
+            }
+            "HOTEL" -> {
+                binding.etPrimaryLocation.setAdapter(
+                    ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, TravelSearchRepository.hotelDestinations)
+                )
+            }
+            else -> {
+                binding.etPrimaryLocation.setAdapter(
+                    ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, TravelSearchRepository.carHireLocations)
+                )
+            }
+        }
+    }
+
+    private fun applyCategoryState(category: String, runSearch: Boolean) {
+        selectedCategory = category
+        binding.chipCatCar.isChecked = category == "CAR"
+        binding.chipCatHotel.isChecked = category == "HOTEL"
+        binding.chipCatFlight.isChecked = category == "FLIGHT"
+
+        setSuggestionsForCategory(category)
+        updateDateTimeButtons()
+
+        when (category) {
+            "HOTEL" -> {
+                binding.etFlightOrigin.visibility = View.GONE
+                binding.etPrimaryLocation.hint = "Type hotel area or town (e.g. Alicante)"
+                binding.chipsCarFilters.visibility = View.GONE
+                binding.chipsHotelFilters.visibility = View.VISIBLE
+                binding.chipsFlightFilters.visibility = View.GONE
+                binding.btnSearchOffers.text = "Compare Hotel Rates"
+            }
+            "FLIGHT" -> {
+                binding.etFlightOrigin.visibility = View.VISIBLE
+                binding.etPrimaryLocation.hint = "Type arrival airport (e.g. Alicante)"
+                binding.chipsCarFilters.visibility = View.GONE
+                binding.chipsHotelFilters.visibility = View.GONE
+                binding.chipsFlightFilters.visibility = View.VISIBLE
+                binding.btnSearchOffers.text = "Compare Flight Fares"
+            }
+            else -> {
+                binding.etFlightOrigin.visibility = View.GONE
+                binding.etPrimaryLocation.hint = "Type car hire town or city (e.g. Alicante)"
+                binding.chipsCarFilters.visibility = View.VISIBLE
+                binding.chipsHotelFilters.visibility = View.GONE
+                binding.chipsFlightFilters.visibility = View.GONE
+                binding.btnSearchOffers.text = "Compare Car Hire Prices"
+            }
+        }
+
+        if (runSearch) {
+            runActiveSearch()
+        }
+    }
+
+    private fun setupCategoryTabs() {
+        binding.chipCatCar.setOnClickListener { applyCategoryState("CAR", runSearch = true) }
+        binding.chipCatHotel.setOnClickListener { applyCategoryState("HOTEL", runSearch = true) }
+        binding.chipCatFlight.setOnClickListener { applyCategoryState("FLIGHT", runSearch = true) }
+
+        binding.btnModeSearch.setOnClickListener {
+            binding.layoutSearchSection.visibility = View.VISIBLE
+            binding.layoutWatchlistSection.visibility = View.GONE
+        }
+        binding.btnModeWatchlist.setOnClickListener {
+            binding.layoutSearchSection.visibility = View.GONE
+            binding.layoutWatchlistSection.visibility = View.VISIBLE
+        }
+        binding.btnProStatus.setOnClickListener {
+            showUpgradeProDialog()
+        }
+        binding.tvViewTermsFooter.setOnClickListener {
+            val intent = Intent(this, TermsActivity::class.java).apply {
+                putExtra(TermsActivity.EXTRA_READ_ONLY, true)
+            }
+            startActivity(intent)
+        }
+    }
+
+    private fun setupFilterListeners() {
+        binding.chipCarFreeCancel.setOnCheckedChangeListener { _, _ -> runActiveSearch() }
+        binding.chipCarAutoOnly.setOnCheckedChangeListener { _, _ -> runActiveSearch() }
+        binding.chipHotelFreeCancel.setOnCheckedChangeListener { _, _ -> runActiveSearch() }
+        binding.chipHotelBreakfast.setOnCheckedChangeListener { _, _ -> runActiveSearch() }
+        binding.chipFlightDirect.setOnCheckedChangeListener { _, _ -> runActiveSearch() }
+        binding.chipFlightCabinBag.setOnCheckedChangeListener { _, _ -> runActiveSearch() }
+    }
+
+    private fun clearSearchToLandingState() {
+        binding.etFlightOrigin.setText("")
+        binding.etPrimaryLocation.setText("")
+        binding.chipCarFreeCancel.isChecked = false
+        binding.chipCarAutoOnly.isChecked = false
+        binding.chipHotelFreeCancel.isChecked = false
+        binding.chipHotelBreakfast.isChecked = false
+        binding.chipFlightDirect.isChecked = false
+        binding.chipFlightCabinBag.isChecked = false
+
+        collectCalendar.timeInMillis = System.currentTimeMillis() + (14L * 24L * 60L * 60L * 1000L)
+        collectCalendar.set(Calendar.HOUR_OF_DAY, 10)
+        collectCalendar.set(Calendar.MINUTE, 0)
+
+        returnCalendar.timeInMillis = System.currentTimeMillis() + (21L * 24L * 60L * 60L * 1000L)
+        returnCalendar.set(Calendar.HOUR_OF_DAY, 10)
+        returnCalendar.set(Calendar.MINUTE, 0)
+
+        applyCategoryState("CAR", runSearch = true)
+        binding.scrollMainRoot.smoothScrollTo(0, 0)
+        Toast.makeText(this, "Search reset to landing view", Toast.LENGTH_SHORT).show()
     }
 
     private fun ensureNotificationPermission() {
@@ -208,7 +380,6 @@ class MainActivity : AppCompatActivity() {
             try {
                 binding.adViewBanner.loadAd(AdRequest.Builder().build())
             } catch (_: Exception) {
-                // Keep UI running smoothly if ad SDK cannot load offline
             }
         }
     }
@@ -245,71 +416,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun setupCategoryTabs() {
-        binding.chipCatCar.setOnClickListener {
-            selectedCategory = "CAR"
-            binding.etFlightOrigin.visibility = View.GONE
-            binding.etPrimaryLocation.hint = "Pick-up Airport or City (e.g. Alicante ALC)"
-            binding.btnPickCollectionDateTime.text =
-                "Collect: ${displayFormatter.format(collectCalendar.time)}"
-            binding.btnPickReturnDateTime.text =
-                "Return: ${displayFormatter.format(returnCalendar.time)}"
-            binding.chipsCarFilters.visibility = View.VISIBLE
-            binding.chipsHotelFilters.visibility = View.GONE
-            binding.chipsFlightFilters.visibility = View.GONE
-            binding.btnSearchOffers.text = "Compare Car Hire Prices"
-            runActiveSearch()
-        }
-
-        binding.chipCatHotel.setOnClickListener {
-            selectedCategory = "HOTEL"
-            binding.etFlightOrigin.visibility = View.GONE
-            binding.etPrimaryLocation.hint = "Destination City or Hotel"
-            binding.btnPickCollectionDateTime.text =
-                "Check-in: ${displayFormatter.format(collectCalendar.time)}"
-            binding.btnPickReturnDateTime.text =
-                "Check-out: ${displayFormatter.format(returnCalendar.time)}"
-            binding.chipsCarFilters.visibility = View.GONE
-            binding.chipsHotelFilters.visibility = View.VISIBLE
-            binding.chipsFlightFilters.visibility = View.GONE
-            binding.btnSearchOffers.text = "Compare Hotel Rates"
-            runActiveSearch()
-        }
-
-        binding.chipCatFlight.setOnClickListener {
-            selectedCategory = "FLIGHT"
-            binding.etFlightOrigin.visibility = View.VISIBLE
-            binding.etPrimaryLocation.hint = "Arrival Airport (e.g. Alicante ALC)"
-            binding.btnPickCollectionDateTime.text =
-                "Outbound: ${displayFormatter.format(collectCalendar.time)}"
-            binding.btnPickReturnDateTime.text =
-                "Inbound: ${displayFormatter.format(returnCalendar.time)}"
-            binding.chipsCarFilters.visibility = View.GONE
-            binding.chipsHotelFilters.visibility = View.GONE
-            binding.chipsFlightFilters.visibility = View.VISIBLE
-            binding.btnSearchOffers.text = "Compare Flight Fares"
-            runActiveSearch()
-        }
-
-        binding.btnModeSearch.setOnClickListener {
-            binding.layoutSearchSection.visibility = View.VISIBLE
-            binding.layoutWatchlistSection.visibility = View.GONE
-        }
-        binding.btnModeWatchlist.setOnClickListener {
-            binding.layoutSearchSection.visibility = View.GONE
-            binding.layoutWatchlistSection.visibility = View.VISIBLE
-        }
-        binding.btnProStatus.setOnClickListener {
-            showUpgradeProDialog()
-        }
-        binding.tvViewTermsFooter.setOnClickListener {
-            val intent = Intent(this, TermsActivity::class.java).apply {
-                putExtra(TermsActivity.EXTRA_READ_ONLY, true)
-            }
-            startActivity(intent)
-        }
-    }
-
     private fun setupLists() {
         offerAdapter = TravelOfferAdapter(
             onBookClick = { offer ->
@@ -342,8 +448,6 @@ class MainActivity : AppCompatActivity() {
         )
         binding.rvWatchlist.layoutManager = LinearLayoutManager(this)
         binding.rvWatchlist.adapter = watchlistAdapter
-
-        runActiveSearch()
     }
 
     private fun setupSearchControls() {
@@ -351,9 +455,13 @@ class MainActivity : AppCompatActivity() {
             runActiveSearch()
             Toast.makeText(
                 this,
-                "Updated deals for ${getFormattedDateRange()}",
+                "Showing $selectedCategory deals for ${getFormattedDateRange()}",
                 Toast.LENGTH_SHORT
             ).show()
+        }
+
+        binding.btnClearSearch.setOnClickListener {
+            clearSearchToLandingState()
         }
 
         binding.btnRunInstantCheck.setOnClickListener {
@@ -385,7 +493,7 @@ class MainActivity : AppCompatActivity() {
         }
         offerAdapter.submitList(results)
         binding.tvResultsHeader.text =
-            "Showing ${results.size} deals • ${getFormattedDateRange()}"
+            "Showing ${results.size} $selectedCategory deals • ${getFormattedDateRange()}"
     }
 
     private fun showArmWatcherSheet(offer: TravelOffer) {
