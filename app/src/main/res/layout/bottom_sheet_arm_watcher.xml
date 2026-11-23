@@ -19,10 +19,18 @@
         android:layout_marginTop="4dp" />
 
     <EditText
-        android:id="@+id/etBookedPrice"
+        android:id="@+id/etAlertEmail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:hint="Email address for price-drop alerts"
+        android:inputType="textEmailAddress" />
+
+    <EditText
+        android:id="@+id/etBookedPrice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:hint="Price you booked (£)"
         android:inputType="numberDecimal" />
 
@@ -88,5 +96,5 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
-        android:text="Activate Price Watcher" />
+        android:text="Activate Email &amp; App Watcher" />
 </LinearLayout>
