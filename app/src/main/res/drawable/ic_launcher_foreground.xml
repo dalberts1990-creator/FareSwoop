@@ -3,13 +3,34 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Deep slate-navy background -->
     <path
-        android:fillColor="#0F172A"
+        android:fillColor="#0B132B"
         android:pathData="M0,0h108v108h-108z" />
+
+    <!-- Subtle outer ring -->
+    <path
+        android:fillColor="#1C2541"
+        android:pathData="M54,14 A40,40 0 1,0 54,94 A40,40 0 1,0 54,14 Z" />
+
+    <!-- Crisp white fare tag / ticket bar -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M28,28 L72,28 L80,36 L72,44 L28,44 Z" />
+    <circle
+        android:fillColor="#0B132B"
+        android:cx="68"
+        android:cy="36"
+        android:r="3.5" />
+
+    <!-- Bold emerald swooping price-drop arrow -->
     <path
         android:fillColor="#10B981"
-        android:pathData="M30,42 L54,68 L78,42 L68,42 L54,57 L40,42 Z" />
+        android:pathData="M24,52 C42,50 56,58 66,72 L76,63 L76,86 L53,86 L62,77 C53,65 41,60 24,62 Z" />
+
+    <!-- Amber sparkle accent showing instant swoop -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M36,30 L72,30 L72,36 L36,36 Z" />
+        android:fillColor="#FBBF24"
+        android:pathData="M34,68 L37,74 L43,77 L37,80 L34,86 L31,80 L25,77 L31,74 Z" />
 </vector>
