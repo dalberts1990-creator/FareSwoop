@@ -45,55 +45,102 @@ object TravelSearchRepository {
     val flightAirports = listOf(
         "Bristol Airport (BRS)",
         "Alicante Airport (ALC)",
-        "London Gatwick (LGW)",
         "London Heathrow (LHR)",
+        "London Gatwick (LGW)",
+        "London Stansted (STN)",
+        "London Luton (LTN)",
         "Manchester Airport (MAN)",
+        "Birmingham Airport (BHX)",
+        "Edinburgh Airport (EDI)",
+        "Glasgow Airport (GLA)",
+        "Newcastle Airport (NCL)",
+        "Leeds Bradford Airport (LBA)",
+        "Liverpool John Lennon Airport (LPL)",
+        "Belfast International Airport (BFS)",
+        "Cardiff Airport (CWL)",
+        "Exeter Airport (EXT)",
+        "Newquay Airport (NQY)",
+        "Dublin Airport (DUB)",
         "Faro Airport (FAO)",
         "Malaga Airport (AGP)",
-        "Edinburgh Airport (EDI)",
-        "Birmingham Airport (BHX)",
-        "Dublin Airport (DUB)"
+        "Barcelona El Prat (BCN)",
+        "Madrid Barajas (MAD)",
+        "Palma de Mallorca Airport (PMI)",
+        "Tenerife South Airport (TFS)",
+        "Paris Charles de Gaulle (CDG)",
+        "Amsterdam Schiphol (AMS)",
+        "Frankfurt Airport (FRA)",
+        "Munich Airport (MUC)",
+        "Rome Fiumicino (FCO)",
+        "Milan Malpensa (MXP)",
+        "Athens Airport (ATH)",
+        "Lisbon Airport (LIS)",
+        "Porto Airport (OPO)",
+        "Zurich Airport (ZRH)",
+        "Geneva Airport (GVA)",
+        "New York JFK (JFK)",
+        "Boston Logan (BOS)",
+        "Orlando International (MCO)",
+        "Dubai International (DXB)",
+        "Doha Hamad International (DOH)"
     )
 
     val carHireLocations = listOf(
         "Alicante Airport (ALC)",
         "Alicante City Centre",
+        "Alicante Train Station",
         "Bristol Airport (BRS)",
         "Bristol Harbourside",
+        "Bristol Temple Meads",
         "Faro Airport (FAO)",
         "Faro Marina",
+        "Albufeira Strip",
         "Malaga Airport (AGP)",
         "Malaga Coast",
+        "Marbella Old Town",
         "Edinburgh Airport (EDI)",
         "Edinburgh Old Town",
-        "Barcelona Airport (BCN)",
+        "Glasgow City Centre",
+        "Manchester City Centre",
         "Barcelona Eixample",
-        "Lisbon Airport (LIS)",
+        "Madrid Atocha",
         "Lisbon Marques de Pombal",
-        "Cardiff Airport (CWL)",
-        "Cardiff Bay"
+        "Porto Boavista",
+        "Cardiff Bay",
+        "Plymouth City Centre",
+        "Exeter City Centre"
     )
 
     val hotelDestinations = listOf(
         "Alicante Old Town",
         "Alicante Beachfront",
+        "Alicante Postiguet",
         "Bristol Clifton",
         "Bristol City Centre",
+        "Bristol Harbourside",
         "Faro Harbour",
+        "Vilamoura Marina",
         "Malaga Promenade",
+        "Malaga Soho",
         "Edinburgh Royal Mile",
+        "Edinburgh New Town",
         "Bath City Centre",
         "Barcelona Gothic Quarter",
-        "Lisbon Chiado"
+        "Barcelona Gracia",
+        "Lisbon Chiado",
+        "Lisbon Alfama",
+        "London South Bank",
+        "Manchester Northern Quarter",
+        "Plymouth Hoe"
     )
 
-    private fun extractIataOrSlug(raw: String, fallbackSlug: String): String {
+    private fun extractCodeOrSlug(raw: String, fallback: String): String {
         val iataMatch = Regex("\\(([A-Z]{3})\\)").find(raw.uppercase())
         if (iataMatch != null) {
             return iataMatch.groupValues[1]
         }
-        val cleaned = raw.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
-        return cleaned.ifBlank { fallbackSlug }
+        val slug = raw.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+        return slug.ifBlank { fallback }
     }
 
     fun searchCars(
@@ -104,12 +151,8 @@ object TravelSearchRepository {
         freeCancelOnly: Boolean
     ): List<TravelOffer> {
         val loc = pickupLocation.ifBlank { "Alicante Airport (ALC)" }
+        val slug = extractCodeOrSlug(loc, "alicante")
         val encodedLoc = Uri.encode(loc)
-        val slugOrIata = extractIataOrSlug(loc, "alicante")
-
-        val kayakUrl = "https://www.kayak.co.uk/cars/$slugOrIata/$pickupDateIso/$returnDateIso?sort=price_a"
-        val skyscannerCarsUrl = "https://www.skyscanner.net/carhire/results/$slugOrIata/$slugOrIata/$pickupDateIso/$returnDateIso/30"
-        val rentalcarsUrl = "https://www.rentalcars.com/SearchResults.do?place=$encodedLoc&puDay=${pickupDateIso.takeLast(2)}&doDay=${returnDateIso.takeLast(2)}"
 
         val offers = listOf(
             TravelOffer(
@@ -122,8 +165,11 @@ object TravelSearchRepository {
                 freeCancellation = true,
                 hasAutomaticTransmission = false,
                 totalPriceGbp = 148.0,
-                unitPriceLabel = "£21.14/day • Taxes included",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(kayakUrl, "CAR")
+                unitPriceLabel = "£21.14/day • Direct mini car deal",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.kayak.co.uk/cars/$slug/$pickupDateIso/$returnDateIso/car-mini?sort=price_a&pickup=$encodedLoc",
+                    "CAR"
+                )
             ),
             TravelOffer(
                 id = "car_2",
@@ -135,8 +181,11 @@ object TravelSearchRepository {
                 freeCancellation = true,
                 hasAutomaticTransmission = true,
                 totalPriceGbp = 214.0,
-                unitPriceLabel = "£30.57/day • Taxes included",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(skyscannerCarsUrl, "CAR")
+                unitPriceLabel = "£30.57/day • Direct compact auto deal",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.skyscanner.net/carhire/results/$slug/$slug/$pickupDateIso/$returnDateIso/30?carClass=compact&transmission=automatic",
+                    "CAR"
+                )
             ),
             TravelOffer(
                 id = "car_3",
@@ -148,8 +197,11 @@ object TravelSearchRepository {
                 freeCancellation = false,
                 hasAutomaticTransmission = true,
                 totalPriceGbp = 179.0,
-                unitPriceLabel = "£25.57/day • Non-refundable saver",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(rentalcarsUrl, "CAR")
+                unitPriceLabel = "£25.57/day • Direct economy hybrid rate",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.rentalcars.com/SearchResults.do?place=$encodedLoc&puDay=${pickupDateIso.takeLast(2)}&doDay=${returnDateIso.takeLast(2)}&vehicleCategory=economy&transmission=automatic",
+                    "CAR"
+                )
             ),
             TravelOffer(
                 id = "car_4",
@@ -161,8 +213,11 @@ object TravelSearchRepository {
                 freeCancellation = true,
                 hasAutomaticTransmission = true,
                 totalPriceGbp = 268.0,
-                unitPriceLabel = "£38.28/day • Taxes included",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(kayakUrl, "CAR")
+                unitPriceLabel = "£38.28/day • Direct SUV reservation",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.kayak.co.uk/cars/$slug/$pickupDateIso/$returnDateIso/car-suv?sort=price_a&pickup=$encodedLoc",
+                    "CAR"
+                )
             ),
             TravelOffer(
                 id = "car_5",
@@ -174,8 +229,11 @@ object TravelSearchRepository {
                 freeCancellation = true,
                 hasAutomaticTransmission = false,
                 totalPriceGbp = 229.0,
-                unitPriceLabel = "£32.71/day • Taxes included",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(skyscannerCarsUrl, "CAR")
+                unitPriceLabel = "£32.71/day • Direct estate car deal",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.skyscanner.net/carhire/results/$slug/$slug/$pickupDateIso/$returnDateIso/30?carClass=estate",
+                    "CAR"
+                )
             )
         )
 
@@ -194,11 +252,8 @@ object TravelSearchRepository {
         freeCancelOnly: Boolean
     ): List<TravelOffer> {
         val city = destination.ifBlank { "Alicante Old Town" }
+        val slug = extractCodeOrSlug(city, "alicante")
         val encodedCity = Uri.encode(city)
-
-        val bookingComUrl = "https://www.booking.com/searchresults.en-gb.html?ss=$encodedCity&checkin=$checkInIso&checkout=$checkOutIso&group_adults=2&no_rooms=1"
-        val hotelsComUrl = "https://uk.hotels.com/Hotel-Search?destination=$encodedCity&startDate=$checkInIso&endDate=$checkOutIso&adults=2"
-        val expediaUrl = "https://www.expedia.co.uk/Hotel-Search?destination=$encodedCity&startDate=$checkInIso&endDate=$checkOutIso&adults=2"
 
         val offers = listOf(
             TravelOffer(
@@ -211,8 +266,11 @@ object TravelSearchRepository {
                 freeCancellation = true,
                 hasBreakfastIncluded = true,
                 totalPriceGbp = 742.0,
-                unitPriceLabel = "£106.00/night • Live dates applied",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(bookingComUrl, "HOTEL")
+                unitPriceLabel = "£106.00/night • Direct property offer",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.booking.com/hotel/es/$slug-harbourview.en-gb.html?checkin=$checkInIso&checkout=$checkOutIso&group_adults=2&no_rooms=1&ss=$encodedCity",
+                    "HOTEL"
+                )
             ),
             TravelOffer(
                 id = "hotel_2",
@@ -224,8 +282,11 @@ object TravelSearchRepository {
                 freeCancellation = true,
                 hasBreakfastIncluded = false,
                 totalPriceGbp = 588.0,
-                unitPriceLabel = "£84.00/night • Live dates applied",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(hotelsComUrl, "HOTEL")
+                unitPriceLabel = "£84.00/night • Direct suite rate",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://uk.hotels.com/ho98412/central-market-suites-$slug/?chkin=$checkInIso&chkout=$checkOutIso&adults=2",
+                    "HOTEL"
+                )
             ),
             TravelOffer(
                 id = "hotel_3",
@@ -237,8 +298,11 @@ object TravelSearchRepository {
                 freeCancellation = true,
                 hasBreakfastIncluded = true,
                 totalPriceGbp = 966.0,
-                unitPriceLabel = "£138.00/night • Live dates applied",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(expediaUrl, "HOTEL")
+                unitPriceLabel = "£138.00/night • Direct resort package",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.expedia.co.uk/Hotel-Search?destination=$encodedCity&startDate=$checkInIso&endDate=$checkOutIso&adults=2&selected=741290",
+                    "HOTEL"
+                )
             ),
             TravelOffer(
                 id = "hotel_4",
@@ -250,8 +314,11 @@ object TravelSearchRepository {
                 freeCancellation = false,
                 hasBreakfastIncluded = false,
                 totalPriceGbp = 413.0,
-                unitPriceLabel = "£59.00/night • Live dates applied",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(bookingComUrl, "HOTEL")
+                unitPriceLabel = "£59.00/night • Direct room offer",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.booking.com/hotel/es/$slug-old-quarter.en-gb.html?checkin=$checkInIso&checkout=$checkOutIso&group_adults=2&no_rooms=1&ss=$encodedCity",
+                    "HOTEL"
+                )
             )
         )
 
@@ -272,13 +339,10 @@ object TravelSearchRepository {
     ): List<TravelOffer> {
         val from = origin.ifBlank { "Bristol Airport (BRS)" }
         val to = destination.ifBlank { "Alicante Airport (ALC)" }
-        val fromCode = extractIataOrSlug(from, "brs").lowercase()
-        val toCode = extractIataOrSlug(to, "alc").lowercase()
+        val fromCode = extractCodeOrSlug(from, "brs").lowercase()
+        val toCode = extractCodeOrSlug(to, "alc").lowercase()
         val skyDateOut = outboundDateIso.replace("-", "").takeLast(6)
         val skyDateIn = inboundDateIso.replace("-", "").takeLast(6)
-
-        val skyscannerFlightUrl = "https://www.skyscanner.net/transport/flights/$fromCode/$toCode/$skyDateOut/$skyDateIn/?adultsv2=1&cabinclass=economy&rtn=1"
-        val kayakFlightUrl = "https://www.kayak.co.uk/flights/${fromCode.uppercase()}-${toCode.uppercase()}/$outboundDateIso/$inboundDateIso?sort=bestflight_a"
 
         val offers = listOf(
             TravelOffer(
@@ -292,8 +356,11 @@ object TravelSearchRepository {
                 isDirectFlight = true,
                 hasCabinBagIncluded = true,
                 totalPriceGbp = 164.0,
-                unitPriceLabel = "Return per person • Dates pre-filled",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(skyscannerFlightUrl, "FLIGHT")
+                unitPriceLabel = "Return per person • Direct fare booking",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.skyscanner.net/transport/flights/$fromCode/$toCode/$skyDateOut/$skyDateIn/?adultsv2=1&cabinclass=economy&rtn=1&stops=0&baggage=cabin",
+                    "FLIGHT"
+                )
             ),
             TravelOffer(
                 id = "flight_2",
@@ -306,8 +373,11 @@ object TravelSearchRepository {
                 isDirectFlight = true,
                 hasCabinBagIncluded = true,
                 totalPriceGbp = 219.0,
-                unitPriceLabel = "Return per person • 10kg bag included",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(kayakFlightUrl, "FLIGHT")
+                unitPriceLabel = "Return per person • Direct flex fare",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.kayak.co.uk/flights/${fromCode.uppercase()}-${toCode.uppercase()}/$outboundDateIso/$inboundDateIso/1adults?sort=bestflight_a&stops=0",
+                    "FLIGHT"
+                )
             ),
             TravelOffer(
                 id = "flight_3",
@@ -320,8 +390,11 @@ object TravelSearchRepository {
                 isDirectFlight = true,
                 hasCabinBagIncluded = false,
                 totalPriceGbp = 112.0,
-                unitPriceLabel = "Return per person • Underseat bag only",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(skyscannerFlightUrl, "FLIGHT")
+                unitPriceLabel = "Return per person • Direct saver fare",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.skyscanner.net/transport/flights/$fromCode/$toCode/$skyDateOut/$skyDateIn/?adultsv2=1&cabinclass=economy&rtn=1&stops=0",
+                    "FLIGHT"
+                )
             ),
             TravelOffer(
                 id = "flight_4",
@@ -334,8 +407,11 @@ object TravelSearchRepository {
                 isDirectFlight = false,
                 hasCabinBagIncluded = true,
                 totalPriceGbp = 254.0,
-                unitPriceLabel = "Return per person • Cabin bag included",
-                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(kayakFlightUrl, "FLIGHT")
+                unitPriceLabel = "Return per person • Direct connecting fare",
+                bookingUrl = AffiliateLinkBuilder.buildBookingUrl(
+                    "https://www.kayak.co.uk/flights/${fromCode.uppercase()}-${toCode.uppercase()}/$outboundDateIso/$inboundDateIso/1adults?sort=bestflight_a&stops=1",
+                    "FLIGHT"
+                )
             )
         )
 
