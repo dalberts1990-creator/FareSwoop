@@ -7,6 +7,8 @@
     <application
         android:name=".FareSwoopApp"
         android:allowBackup="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:roundIcon="@drawable/ic_launcher_foreground"
         android:label="FareSwoop"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar">
 
