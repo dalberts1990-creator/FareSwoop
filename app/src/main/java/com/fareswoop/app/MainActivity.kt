@@ -1,6 +1,7 @@
 package com.fareswoop.app
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -10,7 +11,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Patterns
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -36,14 +39,18 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
+
+    private enum class ScreenMode { HOME, SEARCH, WATCHLIST }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var offerAdapter: TravelOfferAdapter
     private lateinit var watchlistAdapter: WatchlistAdapter
     private var pendingOfferAfterBrowser: TravelOffer? = null
     private var selectedCategory = "CAR"
+    private var currentMode = ScreenMode.HOME
 
     private val collectCalendar: Calendar = Calendar.getInstance().apply {
         add(Calendar.DAY_OF_YEAR, 14)
@@ -65,6 +72,29 @@ class MainActivity : AppCompatActivity() {
     private val requestNotifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    private val swipeDetector by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val dx = e2.x - e1.x
+                val dy = e2.y - e1.y
+                if (dx > 140f && abs(dx) > abs(dy) * 1.4f && abs(velocityX) > 250f) {
+                    if (currentMode != ScreenMode.HOME) {
+                        switchScreenMode(ScreenMode.HOME)
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -89,12 +119,38 @@ class MainActivity : AppCompatActivity() {
 
         refreshProAndAdsState()
         setupDateTimePickers()
-        setupCategoryTabs()
+        setupNavigationAndHomepage()
         setupFilterListeners()
         setupLists()
         setupSearchControls()
         applyCategoryState("CAR", runSearch = true)
+        switchScreenMode(ScreenMode.HOME)
         observeWatchlist()
+
+        binding.scrollMainRoot.setOnTouchListener { _, event ->
+            swipeDetector.onTouchEvent(event)
+            false
+        }
+        binding.layoutMainContainer.setOnTouchListener { _, event ->
+            swipeDetector.onTouchEvent(event)
+            false
+        }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        swipeDetector.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun switchScreenMode(mode: ScreenMode) {
+        currentMode = mode
+        binding.layoutHomeSection.visibility =
+            if (mode == ScreenMode.HOME) View.VISIBLE else View.GONE
+        binding.layoutSearchSection.visibility =
+            if (mode == ScreenMode.SEARCH) View.VISIBLE else View.GONE
+        binding.layoutWatchlistSection.visibility =
+            if (mode == ScreenMode.WATCHLIST) View.VISIBLE else View.GONE
+        binding.scrollMainRoot.smoothScrollTo(0, 0)
     }
 
     private fun applySafeInsets() {
@@ -307,19 +363,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupCategoryTabs() {
+    private fun setupNavigationAndHomepage() {
+        binding.btnModeHome.setOnClickListener { switchScreenMode(ScreenMode.HOME) }
+        binding.btnModeSearch.setOnClickListener { switchScreenMode(ScreenMode.SEARCH) }
+        binding.btnModeWatchlist.setOnClickListener { switchScreenMode(ScreenMode.WATCHLIST) }
+
+        binding.btnHomeStartCars.setOnClickListener {
+            applyCategoryState("CAR", runSearch = true)
+            switchScreenMode(ScreenMode.SEARCH)
+        }
+        binding.btnHomeStartHotels.setOnClickListener {
+            applyCategoryState("HOTEL", runSearch = true)
+            switchScreenMode(ScreenMode.SEARCH)
+        }
+        binding.btnHomeStartFlights.setOnClickListener {
+            applyCategoryState("FLIGHT", runSearch = true)
+            switchScreenMode(ScreenMode.SEARCH)
+        }
+        binding.btnHomeOpenWatchlist.setOnClickListener {
+            switchScreenMode(ScreenMode.WATCHLIST)
+        }
+
         binding.chipCatCar.setOnClickListener { applyCategoryState("CAR", runSearch = true) }
         binding.chipCatHotel.setOnClickListener { applyCategoryState("HOTEL", runSearch = true) }
         binding.chipCatFlight.setOnClickListener { applyCategoryState("FLIGHT", runSearch = true) }
 
-        binding.btnModeSearch.setOnClickListener {
-            binding.layoutSearchSection.visibility = View.VISIBLE
-            binding.layoutWatchlistSection.visibility = View.GONE
-        }
-        binding.btnModeWatchlist.setOnClickListener {
-            binding.layoutSearchSection.visibility = View.GONE
-            binding.layoutWatchlistSection.visibility = View.VISIBLE
-        }
         binding.btnProStatus.setOnClickListener {
             showUpgradeProDialog()
         }
@@ -359,8 +427,8 @@ class MainActivity : AppCompatActivity() {
         returnCalendar.set(Calendar.MINUTE, 0)
 
         applyCategoryState("CAR", runSearch = true)
-        binding.scrollMainRoot.smoothScrollTo(0, 0)
-        Toast.makeText(this, "Search reset to landing view", Toast.LENGTH_SHORT).show()
+        switchScreenMode(ScreenMode.HOME)
+        Toast.makeText(this, "Returned to FareSwoop homepage", Toast.LENGTH_SHORT).show()
     }
 
     private fun ensureNotificationPermission() {
@@ -381,7 +449,7 @@ class MainActivity : AppCompatActivity() {
             binding.btnProStatus.text = "PRO"
             binding.adViewBanner.visibility = View.GONE
         } else {
-            binding.btnProStatus.text = "Go Pro"
+            binding.btnProStatus.text = "Pro"
             binding.adViewBanner.visibility = View.VISIBLE
             try {
                 binding.adViewBanner.loadAd(AdRequest.Builder().build())
@@ -461,7 +529,7 @@ class MainActivity : AppCompatActivity() {
             runActiveSearch()
             Toast.makeText(
                 this,
-                "Updated $selectedCategory deals for ${getFormattedDateRange()}",
+                "Showing $selectedCategory deals for ${getFormattedDateRange()}",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -473,7 +541,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnRunInstantCheck.setOnClickListener {
             val oneTime = OneTimeWorkRequestBuilder<PriceCheckWorker>().build()
             WorkManager.getInstance(this).enqueue(oneTime)
-            Toast.makeText(this, "Scanning live rates & preparing email alerts...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Scanning live rates & preparing alerts...", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -511,6 +579,42 @@ class MainActivity : AppCompatActivity() {
             "Showing ${results.size} $selectedCategory deals • ${getFormattedDateRange()}"
     }
 
+    private fun sendTrackingConfirmationEmail(
+        email: String,
+        tracker: TrackedBooking
+    ) {
+        val subject = "FareSwoop Tracking Active: ${tracker.title}"
+        val body = String.format(
+            Locale.UK,
+            "Hi,\n\nYour FareSwoop price watcher is now active.\n\n" +
+                "Category: %s\n" +
+                "Booking: %s\n" +
+                "Dates: %s\n" +
+                "Supplier: %s\n" +
+                "Booked Price: £%.2f\n" +
+                "Check Interval: Every %dh\n\n" +
+                "We will notify you in the app and prepare an email alert if a lower rate is spotted.\n\n" +
+                "— FareSwoop",
+            tracker.category,
+            tracker.title,
+            tracker.dateRange,
+            tracker.supplierName,
+            tracker.bookedPriceGbp,
+            tracker.checkIntervalHours
+        )
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:")
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, body)
+        }
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            Toast.makeText(this, "Watcher saved; no email app found to send confirmation", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun showArmWatcherSheet(offer: TravelOffer) {
         val dialog = BottomSheetDialog(this)
         val sheetBinding = BottomSheetArmWatcherBinding.inflate(layoutInflater)
@@ -528,12 +632,12 @@ class MainActivity : AppCompatActivity() {
         val summaryTitle = if (offer.category == "FLIGHT") {
             "${offer.primaryTitle} ($dates)"
         } else {
-            "$location • ${offer.primaryTitle}"
+            val locPrefix = if (location.isNotBlank()) "$location • " else ""
+            "$locPrefix${offer.primaryTitle}"
         }
 
         sheetBinding.tvSheetSummary.text = "$summaryTitle • $dates"
         sheetBinding.etBookedPrice.setText(String.format(Locale.UK, "%.2f", offer.totalPriceGbp))
-        sheetBinding.etMinDrop.setText("10")
         sheetBinding.etCancelDeadline.setText(
             if (offer.freeCancellation) "Free cancellation active" else "Check fare rules"
         )
@@ -547,7 +651,6 @@ class MainActivity : AppCompatActivity() {
 
             val bookedPrice = sheetBinding.etBookedPrice.text.toString().toDoubleOrNull()
                 ?: offer.totalPriceGbp
-            val minDrop = sheetBinding.etMinDrop.text.toString().toDoubleOrNull() ?: 10.0
             val cancelDeadline = sheetBinding.etCancelDeadline.text.toString().trim()
                 .ifBlank { "Check fare rules" }
             val chosenHours = when {
@@ -582,7 +685,7 @@ class MainActivity : AppCompatActivity() {
                     bookingUrl = offer.bookingUrl,
                     bookedPriceGbp = bookedPrice,
                     latestPriceGbp = bookedPrice,
-                    minDropThresholdGbp = minDrop,
+                    minDropThresholdGbp = 10.0,
                     sameSupplierOnly = sheetBinding.switchSameSupplier.isChecked,
                     freeCancelDeadline = cancelDeadline,
                     alertEmail = email,
@@ -591,15 +694,9 @@ class MainActivity : AppCompatActivity() {
                 dao.insert(tracker)
                 PriceCheckWorker.schedulePeriodicChecks(this@MainActivity, effectiveInterval)
 
-                Toast.makeText(
-                    this@MainActivity,
-                    "Watcher armed! App + email alerts ($email) active.",
-                    Toast.LENGTH_LONG
-                ).show()
-
                 dialog.dismiss()
-                binding.layoutSearchSection.visibility = View.GONE
-                binding.layoutWatchlistSection.visibility = View.VISIBLE
+                switchScreenMode(ScreenMode.WATCHLIST)
+                sendTrackingConfirmationEmail(email, tracker)
             }
         }
 
