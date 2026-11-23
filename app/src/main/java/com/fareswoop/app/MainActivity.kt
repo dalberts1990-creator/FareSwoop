@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -59,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     private val dateTimeFormatter = SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.UK)
     private val dateOnlyFormatter = SimpleDateFormat("dd MMM yyyy", Locale.UK)
     private val compactDateFormatter = SimpleDateFormat("dd MMM", Locale.UK)
+    private val isoDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.UK)
 
     private val requestNotifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -144,6 +146,7 @@ class MainActivity : AppCompatActivity() {
                             collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
                     }
                     updateDateTimeButtons()
+                    runActiveSearch()
                 }
             } else {
                 pickDateAndTime(collectCalendar) {
@@ -152,6 +155,7 @@ class MainActivity : AppCompatActivity() {
                             collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
                     }
                     updateDateTimeButtons()
+                    runActiveSearch()
                 }
             }
         }
@@ -160,10 +164,12 @@ class MainActivity : AppCompatActivity() {
             if (selectedCategory == "HOTEL") {
                 pickDateOnly(returnCalendar) {
                     updateDateTimeButtons()
+                    runActiveSearch()
                 }
             } else {
                 pickDateAndTime(returnCalendar) {
                     updateDateTimeButtons()
+                    runActiveSearch()
                 }
             }
         }
@@ -288,7 +294,7 @@ class MainActivity : AppCompatActivity() {
             }
             else -> {
                 binding.etFlightOrigin.visibility = View.GONE
-                binding.etPrimaryLocation.hint = "Type car hire town or city (e.g. Alicante)"
+                binding.etPrimaryLocation.hint = "Type car hire airport or city (e.g. Alicante)"
                 binding.chipsCarFilters.visibility = View.VISIBLE
                 binding.chipsHotelFilters.visibility = View.GONE
                 binding.chipsFlightFilters.visibility = View.GONE
@@ -455,7 +461,7 @@ class MainActivity : AppCompatActivity() {
             runActiveSearch()
             Toast.makeText(
                 this,
-                "Showing $selectedCategory deals for ${getFormattedDateRange()}",
+                "Updated $selectedCategory deals for ${getFormattedDateRange()}",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -467,26 +473,35 @@ class MainActivity : AppCompatActivity() {
         binding.btnRunInstantCheck.setOnClickListener {
             val oneTime = OneTimeWorkRequestBuilder<PriceCheckWorker>().build()
             WorkManager.getInstance(this).enqueue(oneTime)
-            Toast.makeText(this, "Scanning live Car, Hotel & Flight rates...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Scanning live rates & preparing email alerts...", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun runActiveSearch() {
         val location = binding.etPrimaryLocation.text.toString().trim()
+        val startIso = isoDateFormatter.format(collectCalendar.time)
+        val endIso = isoDateFormatter.format(returnCalendar.time)
+
         val results = when (selectedCategory) {
             "HOTEL" -> TravelSearchRepository.searchHotels(
                 destination = location,
+                checkInIso = startIso,
+                checkOutIso = endIso,
                 breakfastIncludedOnly = binding.chipHotelBreakfast.isChecked,
                 freeCancelOnly = binding.chipHotelFreeCancel.isChecked
             )
             "FLIGHT" -> TravelSearchRepository.searchFlights(
                 origin = binding.etFlightOrigin.text.toString().trim(),
                 destination = location,
+                outboundDateIso = startIso,
+                inboundDateIso = endIso,
                 directOnly = binding.chipFlightDirect.isChecked,
                 cabinBagOnly = binding.chipFlightCabinBag.isChecked
             )
             else -> TravelSearchRepository.searchCars(
                 pickupLocation = location,
+                pickupDateIso = startIso,
+                returnDateIso = endIso,
                 automaticOnly = binding.chipCarAutoOnly.isChecked,
                 freeCancelOnly = binding.chipCarFreeCancel.isChecked
             )
@@ -524,6 +539,12 @@ class MainActivity : AppCompatActivity() {
         )
 
         sheetBinding.btnActivateWatcher.setOnClickListener {
+            val email = sheetBinding.etAlertEmail.text.toString().trim()
+            if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                sheetBinding.etAlertEmail.error = "Enter a valid email address for alerts"
+                return@setOnClickListener
+            }
+
             val bookedPrice = sheetBinding.etBookedPrice.text.toString().toDoubleOrNull()
                 ?: offer.totalPriceGbp
             val minDrop = sheetBinding.etMinDrop.text.toString().toDoubleOrNull() ?: 10.0
@@ -564,6 +585,7 @@ class MainActivity : AppCompatActivity() {
                     minDropThresholdGbp = minDrop,
                     sameSupplierOnly = sheetBinding.switchSameSupplier.isChecked,
                     freeCancelDeadline = cancelDeadline,
+                    alertEmail = email,
                     checkIntervalHours = effectiveInterval
                 )
                 dao.insert(tracker)
@@ -571,7 +593,7 @@ class MainActivity : AppCompatActivity() {
 
                 Toast.makeText(
                     this@MainActivity,
-                    "${offer.category} watcher armed! Checking every ${effectiveInterval}h.",
+                    "Watcher armed! App + email alerts ($email) active.",
                     Toast.LENGTH_LONG
                 ).show()
 
@@ -690,7 +712,8 @@ class WatchlistAdapter(
             onDeleteClick: (TrackedBooking) -> Unit
         ) {
             binding.tvWatchTitle.text = "[${item.category}] ${item.title}"
-            binding.tvWatchDates.text = "${item.dateRange} • ${item.supplierName}"
+            val emailInfo = if (item.alertEmail.isNotBlank()) " • ${item.alertEmail}" else ""
+            binding.tvWatchDates.text = "${item.dateRange} • ${item.supplierName}$emailInfo"
             binding.tvBookedVsLive.text = String.format(
                 Locale.UK,
                 "Booked: £%.2f  →  Live: £%.2f",
