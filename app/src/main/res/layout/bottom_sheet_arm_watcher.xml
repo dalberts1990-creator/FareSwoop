@@ -35,14 +35,6 @@
         android:inputType="numberDecimal" />
 
     <EditText
-        android:id="@+id/etMinDrop"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="Minimum drop to alert (£)"
-        android:inputType="numberDecimal" />
-
-    <EditText
         android:id="@+id/etCancelDeadline"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
