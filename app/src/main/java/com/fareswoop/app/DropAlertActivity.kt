@@ -42,8 +42,16 @@ class DropAlertActivity : AppCompatActivity() {
         }
 
         binding.btnCancelOldBooking.setOnClickListener {
-            val url = booking?.bookingUrl ?: return@setOnClickListener
-            CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(url))
+            val item = booking ?: return@setOnClickListener
+            if (item.alertEmail.isNotBlank()) {
+                try {
+                    startActivity(PriceCheckWorker.buildEmailAlertIntent(item, item.savingsGbp))
+                } catch (_: Exception) {
+                    Toast.makeText(this, "No email app configured on device", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(item.bookingUrl))
+            }
         }
 
         binding.btnUpdateTargetPrice.setOnClickListener {
@@ -67,13 +75,22 @@ class DropAlertActivity : AppCompatActivity() {
         val savings = item.savingsGbp
         binding.tvDropHeadline.text = String.format(Locale.UK, "Save £%.2f Now", savings)
         binding.tvDropSubhead.text = item.title
+        val emailLine = if (item.alertEmail.isNotBlank()) {
+            "Alert Email: ${item.alertEmail}\n"
+        } else {
+            ""
+        }
         binding.tvPriceComparison.text = String.format(
             Locale.UK,
-            "Original Booked Price: £%.2f\nNew Live Rate: £%.2f\nCancellation Window: %s\n\nReminder: Confirm your new booking first and verify free cancellation rules before cancelling your original reservation.",
+            "%sOriginal Booked Price: £%.2f\nNew Live Rate: £%.2f\nCancellation Window: %s\n\nReminder: Confirm your new booking first and verify free cancellation rules before cancelling your original reservation.",
+            emailLine,
             item.bookedPriceGbp,
             item.latestPriceGbp,
             item.freeCancelDeadline
         )
+        if (item.alertEmail.isNotBlank()) {
+            binding.btnCancelOldBooking.text = "2. Send Alert Email to ${item.alertEmail}"
+        }
     }
 
     companion object {
