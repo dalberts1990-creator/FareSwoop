@@ -18,11 +18,11 @@
     <path
         android:fillColor="#F8FAFC"
         android:pathData="M28,28 L72,28 L80,36 L72,44 L28,44 Z" />
+
+    <!-- Tag eyelet hole drawn as a vector path -->
     <path
         android:fillColor="#0B132B"
-        android:cx="68"
-        android:cy="36"
-        android:r="3.5" />
+        android:pathData="M68,32.5 A3.5,3.5 0 1,0 68,39.5 A3.5,3.5 0 1,0 68,32.5 Z" />
 
     <!-- Bold emerald swooping price-drop arrow -->
     <path
