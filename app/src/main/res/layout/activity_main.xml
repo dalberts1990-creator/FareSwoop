@@ -125,6 +125,7 @@
             android:orientation="vertical">
 
             <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -151,26 +152,25 @@
                     android:text="Flights" />
             </com.google.android.material.chip.ChipGroup>
 
-            <EditText
+            <AutoCompleteTextView
                 android:id="@+id/etFlightOrigin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:hint="Departure Airport (e.g. Bristol BRS)"
+                android:completionThreshold="1"
+                android:hint="Type departure airport (e.g. Bristol)"
                 android:inputType="text"
-                android:text="Bristol (BRS)"
                 android:visibility="gone" />
 
-            <EditText
+            <AutoCompleteTextView
                 android:id="@+id/etPrimaryLocation"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:hint="Pick-up Airport or City (e.g. Alicante ALC)"
-                android:inputType="text"
-                android:text="Alicante Airport (ALC)" />
+                android:completionThreshold="1"
+                android:hint="Type pick-up town or city (e.g. Alicante)"
+                android:inputType="text" />
 
-            <!-- Collection Date & Time Picker Button -->
             <Button
                 android:id="@+id/btnPickCollectionDateTime"
                 style="?attr/materialButtonOutlinedStyle"
@@ -178,9 +178,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:gravity="start|center_vertical"
-                android:text="Collect: 14 Jun 2027 • 10:00" />
+                android:text="Collect: Select date &amp; time" />
 
-            <!-- Return Date & Time Picker Button -->
             <Button
                 android:id="@+id/btnPickReturnDateTime"
                 style="?attr/materialButtonOutlinedStyle"
@@ -188,7 +187,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="start|center_vertical"
-                android:text="Return: 21 Jun 2027 • 10:00" />
+                android:text="Return: Select date &amp; time" />
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipsCarFilters"
@@ -201,7 +200,6 @@
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="true"
                     android:text="Free Cancellation" />
 
                 <com.google.android.material.chip.Chip
@@ -224,7 +222,6 @@
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="true"
                     android:text="Free Cancellation" />
 
                 <com.google.android.material.chip.Chip
@@ -247,7 +244,6 @@
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="true"
                     android:text="Direct Flights Only" />
 
                 <com.google.android.material.chip.Chip
@@ -264,6 +260,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Compare Car Hire Prices" />
+
+            <Button
+                android:id="@+id/btnClearSearch"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Clear Search" />
 
             <TextView
                 android:id="@+id/tvResultsHeader"
