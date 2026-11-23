@@ -18,7 +18,7 @@
     <path
         android:fillColor="#F8FAFC"
         android:pathData="M28,28 L72,28 L80,36 L72,44 L28,44 Z" />
-    <circle
+    <path
         android:fillColor="#0B132B"
         android:cx="68"
         android:cy="36"
