@@ -2,6 +2,8 @@ package com.fareswoop.app
 
 import android.Manifest
 import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -15,6 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -27,6 +31,8 @@ import com.fareswoop.app.databinding.ItemWatchlistBinding
 import com.google.android.gms.ads.AdRequest
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -36,6 +42,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var watchlistAdapter: WatchlistAdapter
     private var pendingOfferAfterBrowser: TravelOffer? = null
     private var selectedCategory = "CAR"
+
+    private val collectCalendar: Calendar = Calendar.getInstance().apply {
+        add(Calendar.DAY_OF_YEAR, 14)
+        set(Calendar.HOUR_OF_DAY, 10)
+        set(Calendar.MINUTE, 0)
+    }
+
+    private val returnCalendar: Calendar = Calendar.getInstance().apply {
+        add(Calendar.DAY_OF_YEAR, 21)
+        set(Calendar.HOUR_OF_DAY, 10)
+        set(Calendar.MINUTE, 0)
+    }
+
+    private val displayFormatter = SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.UK)
+    private val compactDateFormatter = SimpleDateFormat("dd MMM HH:mm", Locale.UK)
 
     private val requestNotifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -52,7 +73,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        applySafeInsets()
         ensureNotificationPermission()
+
         val defaultHours = if (AppPreferences.isPro(this)) {
             AppPreferences.PRO_FAST_INTERVAL_HOURS
         } else {
@@ -61,10 +84,27 @@ class MainActivity : AppCompatActivity() {
         PriceCheckWorker.schedulePeriodicChecks(this, defaultHours)
 
         refreshProAndAdsState()
+        setupDateTimePickers()
         setupCategoryTabs()
         setupLists()
         setupSearchControls()
         observeWatchlist()
+    }
+
+    private fun applySafeInsets() {
+        val basePad = (16 * resources.displayMetrics.density).toInt()
+        ViewCompat.setOnApplyWindowInsetsListener(binding.layoutMainContainer) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(
+                basePad + bars.left,
+                basePad + bars.top,
+                basePad + bars.right,
+                basePad + bars.bottom
+            )
+            insets
+        }
     }
 
     override fun onResume() {
@@ -89,6 +129,62 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupDateTimePickers() {
+        updateDateTimeButtons()
+
+        binding.btnPickCollectionDateTime.setOnClickListener {
+            pickCalendarThenTime(collectCalendar) {
+                if (returnCalendar.before(collectCalendar)) {
+                    returnCalendar.timeInMillis = collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
+                }
+                updateDateTimeButtons()
+            }
+        }
+
+        binding.btnPickReturnDateTime.setOnClickListener {
+            pickCalendarThenTime(returnCalendar) {
+                updateDateTimeButtons()
+            }
+        }
+    }
+
+    private fun pickCalendarThenTime(target: Calendar, onDone: () -> Unit) {
+        DatePickerDialog(
+            this,
+            { _, year, month, dayOfMonth ->
+                target.set(Calendar.YEAR, year)
+                target.set(Calendar.MONTH, month)
+                target.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+
+                TimePickerDialog(
+                    this,
+                    { _, hourOfDay, minute ->
+                        target.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                        target.set(Calendar.MINUTE, minute)
+                        onDone()
+                    },
+                    target.get(Calendar.HOUR_OF_DAY),
+                    target.get(Calendar.MINUTE),
+                    true
+                ).show()
+            },
+            target.get(Calendar.YEAR),
+            target.get(Calendar.MONTH),
+            target.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    private fun updateDateTimeButtons() {
+        binding.btnPickCollectionDateTime.text =
+            "Collect: ${displayFormatter.format(collectCalendar.time)}"
+        binding.btnPickReturnDateTime.text =
+            "Return: ${displayFormatter.format(returnCalendar.time)}"
+    }
+
+    private fun getFormattedDateRange(): String {
+        return "${compactDateFormatter.format(collectCalendar.time)} → ${compactDateFormatter.format(returnCalendar.time)}"
+    }
+
     private fun ensureNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
@@ -109,7 +205,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             binding.btnProStatus.text = "Go Pro"
             binding.adViewBanner.visibility = View.VISIBLE
-            binding.adViewBanner.loadAd(AdRequest.Builder().build())
+            try {
+                binding.adViewBanner.loadAd(AdRequest.Builder().build())
+            } catch (_: Exception) {
+                // Keep UI running smoothly if ad SDK cannot load offline
+            }
         }
     }
 
@@ -150,7 +250,10 @@ class MainActivity : AppCompatActivity() {
             selectedCategory = "CAR"
             binding.etFlightOrigin.visibility = View.GONE
             binding.etPrimaryLocation.hint = "Pick-up Airport or City (e.g. Alicante ALC)"
-            binding.etPrimaryLocation.setText("Alicante Airport (ALC)")
+            binding.btnPickCollectionDateTime.text =
+                "Collect: ${displayFormatter.format(collectCalendar.time)}"
+            binding.btnPickReturnDateTime.text =
+                "Return: ${displayFormatter.format(returnCalendar.time)}"
             binding.chipsCarFilters.visibility = View.VISIBLE
             binding.chipsHotelFilters.visibility = View.GONE
             binding.chipsFlightFilters.visibility = View.GONE
@@ -162,7 +265,10 @@ class MainActivity : AppCompatActivity() {
             selectedCategory = "HOTEL"
             binding.etFlightOrigin.visibility = View.GONE
             binding.etPrimaryLocation.hint = "Destination City or Hotel"
-            binding.etPrimaryLocation.setText("Alicante City Centre")
+            binding.btnPickCollectionDateTime.text =
+                "Check-in: ${displayFormatter.format(collectCalendar.time)}"
+            binding.btnPickReturnDateTime.text =
+                "Check-out: ${displayFormatter.format(returnCalendar.time)}"
             binding.chipsCarFilters.visibility = View.GONE
             binding.chipsHotelFilters.visibility = View.VISIBLE
             binding.chipsFlightFilters.visibility = View.GONE
@@ -174,7 +280,10 @@ class MainActivity : AppCompatActivity() {
             selectedCategory = "FLIGHT"
             binding.etFlightOrigin.visibility = View.VISIBLE
             binding.etPrimaryLocation.hint = "Arrival Airport (e.g. Alicante ALC)"
-            binding.etPrimaryLocation.setText("Alicante (ALC)")
+            binding.btnPickCollectionDateTime.text =
+                "Outbound: ${displayFormatter.format(collectCalendar.time)}"
+            binding.btnPickReturnDateTime.text =
+                "Inbound: ${displayFormatter.format(returnCalendar.time)}"
             binding.chipsCarFilters.visibility = View.GONE
             binding.chipsHotelFilters.visibility = View.GONE
             binding.chipsFlightFilters.visibility = View.VISIBLE
@@ -238,7 +347,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSearchControls() {
-        binding.btnSearchOffers.setOnClickListener { runActiveSearch() }
+        binding.btnSearchOffers.setOnClickListener {
+            runActiveSearch()
+            Toast.makeText(
+                this,
+                "Updated deals for ${getFormattedDateRange()}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
 
         binding.btnRunInstantCheck.setOnClickListener {
             val oneTime = OneTimeWorkRequestBuilder<PriceCheckWorker>().build()
@@ -268,6 +384,8 @@ class MainActivity : AppCompatActivity() {
             )
         }
         offerAdapter.submitList(results)
+        binding.tvResultsHeader.text =
+            "Showing ${results.size} deals • ${getFormattedDateRange()}"
     }
 
     private fun showArmWatcherSheet(offer: TravelOffer) {
@@ -276,7 +394,7 @@ class MainActivity : AppCompatActivity() {
         dialog.setContentView(sheetBinding.root)
 
         val location = binding.etPrimaryLocation.text.toString().trim()
-        val dates = binding.etDateRange.text.toString().trim().ifBlank { "14 Jun – 21 Jun" }
+        val dates = getFormattedDateRange()
 
         sheetBinding.switchSameSupplier.text = when (offer.category) {
             "HOTEL" -> "Same hotel only (off = any equal/higher star hotel)"
@@ -377,8 +495,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openInCustomTab(url: String) {
-        val customTabsIntent = CustomTabsIntent.Builder().setShowTitle(true).build()
-        customTabsIntent.launchUrl(this, Uri.parse(url))
+        val uri = Uri.parse(url)
+        try {
+            val customTabsIntent = CustomTabsIntent.Builder().setShowTitle(true).build()
+            customTabsIntent.launchUrl(this, uri)
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, uri))
+            } catch (_: Exception) {
+                Toast.makeText(this, "Unable to open booking link on this device", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }
 
