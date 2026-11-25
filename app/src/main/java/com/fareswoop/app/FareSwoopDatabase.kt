@@ -26,7 +26,6 @@ data class TrackedBooking(
     val minDropThresholdGbp: Double = 10.0,
     val sameSupplierOnly: Boolean = false,
     val freeCancelDeadline: String,
-    val alertEmail: String = "",
     val checkIntervalHours: Long = 12L,
     val isActive: Boolean = true,
     val lastCheckedMillis: Long = System.currentTimeMillis()
@@ -56,7 +55,7 @@ interface TrackedBookingDao {
     suspend fun delete(booking: TrackedBooking)
 }
 
-@Database(entities = [TrackedBooking::class], version = 2)
+@Database(entities = [TrackedBooking::class], version = 3)
 abstract class FareSwoopDatabase : RoomDatabase() {
     abstract fun dao(): TrackedBookingDao
 
