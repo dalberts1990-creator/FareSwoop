@@ -97,6 +97,53 @@ class PriceCheckWorker(
     companion object {
         private const val WORK_NAME = "fareswoop_periodic_price_check"
 
+        fun sendWatchActivatedNotification(context: Context, booking: TrackedBooking) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+
+            val openAppIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                (booking.id.toInt() + 50000),
+                openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val title = "FareSwoop Watch Active (${booking.category})"
+            val body = String.format(
+                Locale.UK,
+                "Now monitoring %s (%s) from £%.2f every %dh.",
+                booking.title,
+                booking.dateRange,
+                booking.bookedPriceGbp,
+                booking.checkIntervalHours
+            )
+
+            val notification = NotificationCompat.Builder(
+                context,
+                FareSwoopApp.CHANNEL_PRICE_DROPS
+            )
+                .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+
+            NotificationManagerCompat.from(context)
+                .notify((System.currentTimeMillis() % 100000).toInt(), notification)
+        }
+
         fun schedulePeriodicChecks(context: Context, intervalHours: Long = 12L) {
             val safeHours = intervalHours.coerceAtLeast(1L)
             val request = PeriodicWorkRequestBuilder<PriceCheckWorker>(safeHours, TimeUnit.HOURS)
