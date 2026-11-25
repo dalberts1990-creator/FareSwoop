@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:ads="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/scrollMainRoot"
+    android:id="@+id/rootFrameLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC"
-    android:fillViewport="true">
+    android:background="#F8FAFC">
 
     <LinearLayout
         android:id="@+id/layoutMainContainer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Single-line top bar -->
+        <!-- Pinned Single-Line Header & Active Tab Bar -->
         <LinearLayout
+            android:id="@+id/layoutPinnedHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -40,9 +40,9 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnModeHome"
-                style="?attr/materialButtonOutlinedStyle"
+                style="?attr/materialButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
@@ -50,7 +50,7 @@
                 android:text="Home"
                 android:textSize="12sp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnModeSearch"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
@@ -61,8 +61,9 @@
                 android:text="Search"
                 android:textSize="12sp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnModeWatchlist"
+                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
@@ -71,7 +72,7 @@
                 android:text="Watch"
                 android:textSize="12sp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnProStatus"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
@@ -83,8 +84,9 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <!-- Summary bar -->
+        <!-- Pinned Summary Bar -->
         <LinearLayout
+            android:id="@+id/layoutSummaryBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -110,335 +112,524 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Landing Homepage View -->
-        <LinearLayout
-            android:id="@+id/layoutHomeSection"
+        <!-- Scrollable Body Below Pinned Header -->
+        <ScrollView
+            android:id="@+id/scrollMainRoot"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="#FFFFFF"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <ImageView
-                android:id="@+id/ivHeroLogo"
-                android:layout_width="84dp"
-                android:layout_height="84dp"
-                android:layout_gravity="center_horizontal"
-                android:contentDescription="FareSwoop brand logo"
-                android:src="@drawable/ic_launcher_foreground" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center"
-                android:text="What do you want to search for?"
-                android:textColor="#0F172A"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:text="Pick a travel category to start comparing prices and tracking price drops. Swipe right anytime to return here."
-                android:textColor="#475569"
-                android:textSize="14sp" />
-
-            <Button
-                android:id="@+id/btnHomeStartCars"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:text="Search Car Hire" />
-
-            <Button
-                android:id="@+id/btnHomeStartHotels"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Search Hotels" />
-
-            <Button
-                android:id="@+id/btnHomeStartFlights"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Search Flights" />
-
-            <Button
-                android:id="@+id/btnHomeOpenWatchlist"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="View Tracked Prices" />
-        </LinearLayout>
-
-        <!-- Post-booking prompt -->
-        <LinearLayout
-            android:id="@+id/cardPostBookingBanner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="#ECFDF5"
-            android:orientation="vertical"
-            android:padding="12dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tvPostBookingPrompt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#065F46"
-                android:textStyle="bold" />
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
 
             <LinearLayout
+                android:id="@+id/layoutScrollContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/btnConfirmBooked"
-                    android:layout_width="wrap_content"
+                <!-- Intuitive Homepage -->
+                <LinearLayout
+                    android:id="@+id/layoutHomeSection"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Yes, Start Watching" />
+                    android:background="#FFFFFF"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-                <Button
-                    android:id="@+id/btnDismissBooked"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="wrap_content"
+                    <ImageView
+                        android:id="@+id/ivHeroLogo"
+                        android:layout_width="88dp"
+                        android:layout_height="88dp"
+                        android:layout_gravity="center_horizontal"
+                        android:contentDescription="FareSwoop logo"
+                        android:src="@drawable/ic_launcher_foreground" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center"
+                        android:text="What do you want to search for?"
+                        android:textColor="#0F172A"
+                        android:textSize="21sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center"
+                        android:text="Compare prices and get instant app alerts when rates drop. Swipe right anytime to come back here."
+                        android:textColor="#475569"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btnHomeStartCars"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Car Hire — Compare &amp; Track" />
+
+                    <Button
+                        android:id="@+id/btnHomeStartHotels"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Hotels — Compare &amp; Track" />
+
+                    <Button
+                        android:id="@+id/btnHomeStartFlights"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Flights — Compare &amp; Track" />
+
+                    <Button
+                        android:id="@+id/btnHomeOpenWatchlist"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="My Price Watchlist" />
+                </LinearLayout>
+
+                <!-- Post-booking banner -->
+                <LinearLayout
+                    android:id="@+id/cardPostBookingBanner"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Not Yet" />
+                    android:layout_marginTop="10dp"
+                    android:background="#ECFDF5"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvPostBookingPrompt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="#065F46"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnConfirmBooked"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Yes, Start Watching" />
+
+                        <Button
+                            android:id="@+id/btnDismissBooked"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Not Yet" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Search Section -->
+                <LinearLayout
+                    android:id="@+id/layoutSearchSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipGroupCategory"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCatCar"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="Car Hire" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCatHotel"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Hotels" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCatFlight"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Flights" />
+                    </com.google.android.material.chip.ChipGroup>
+
+                    <AutoCompleteTextView
+                        android:id="@+id/etFlightOrigin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:completionThreshold="1"
+                        android:hint="Type departure airport (e.g. Bristol)"
+                        android:inputType="text"
+                        android:visibility="gone" />
+
+                    <AutoCompleteTextView
+                        android:id="@+id/etPrimaryLocation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:completionThreshold="1"
+                        android:hint="Type airport, town or city (e.g. Alicante)"
+                        android:inputType="text" />
+
+                    <Button
+                        android:id="@+id/btnPickCollectionDateTime"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="start|center_vertical"
+                        android:text="Collect: Select date &amp; time" />
+
+                    <Button
+                        android:id="@+id/btnPickReturnDateTime"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="start|center_vertical"
+                        android:text="Return: Select date &amp; time" />
+
+                    <!-- Adults & Children Selector -->
+                    <LinearLayout
+                        android:id="@+id/layoutPartySelector"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="#FFFFFF"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="10dp">
+
+                        <TextView
+                            android:id="@+id/tvAdultsCount"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Adults: 2"
+                            android:textColor="#0F172A"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnAdultsMinus"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:insetLeft="0dp"
+                            android:insetTop="0dp"
+                            android:insetRight="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
+                            android:text="-" />
+
+                        <Button
+                            android:id="@+id/btnAdultsPlus"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="4dp"
+                            android:insetLeft="0dp"
+                            android:insetTop="0dp"
+                            android:insetRight="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
+                            android:text="+" />
+
+                        <TextView
+                            android:id="@+id/tvChildrenCount"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:text="Children: 0"
+                            android:textColor="#0F172A"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnChildrenMinus"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:insetLeft="0dp"
+                            android:insetTop="0dp"
+                            android:insetRight="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
+                            android:text="-" />
+
+                        <Button
+                            android:id="@+id/btnChildrenPlus"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="4dp"
+                            android:insetLeft="0dp"
+                            android:insetTop="0dp"
+                            android:insetRight="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
+                            android:text="+" />
+                    </LinearLayout>
+
+                    <!-- Rooms Selector (Hotels) -->
+                    <LinearLayout
+                        android:id="@+id/layoutRoomsSelector"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="#FFFFFF"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="10dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tvRoomsCount"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Rooms: 1"
+                            android:textColor="#0F172A"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnRoomsMinus"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:insetLeft="0dp"
+                            android:insetTop="0dp"
+                            android:insetRight="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
+                            android:text="-" />
+
+                        <Button
+                            android:id="@+id/btnRoomsPlus"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="4dp"
+                            android:insetLeft="0dp"
+                            android:insetTop="0dp"
+                            android:insetRight="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
+                            android:text="+" />
+                    </LinearLayout>
+
+                    <!-- Cabin Class Selector (Flights) -->
+                    <Button
+                        android:id="@+id/btnCabinClass"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="start|center_vertical"
+                        android:text="Ticket Class: Economy (Tap to switch)"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipsCarFilters"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCarFreeCancel"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Free Cancellation" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCarAutoOnly"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Automatic Only" />
+                    </com.google.android.material.chip.ChipGroup>
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipsHotelFilters"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipHotelFreeCancel"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Free Cancellation" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipHotelBreakfast"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Breakfast Included" />
+                    </com.google.android.material.chip.ChipGroup>
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipsFlightFilters"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipFlightDirect"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Direct Flights Only" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipFlightCabinBag"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cabin Bag Included" />
+                    </com.google.android.material.chip.ChipGroup>
+
+                    <Button
+                        android:id="@+id/btnSearchOffers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Compare Car Hire Prices" />
+
+                    <Button
+                        android:id="@+id/btnClearSearch"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Clear Search" />
+
+                    <TextView
+                        android:id="@+id/tvResultsHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="Showing deals"
+                        android:textColor="#475569"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvOffers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:nestedScrollingEnabled="false" />
+                </LinearLayout>
+
+                <!-- Watchlist Section -->
+                <LinearLayout
+                    android:id="@+id/layoutWatchlistSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <Button
+                        android:id="@+id/btnRunInstantCheck"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Run Live Price Check Now" />
+
+                    <TextView
+                        android:id="@+id/tvEmptyWatchlist"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="No active price watchers yet. Search and tap Track Price to arm app alerts." />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvWatchlist"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:nestedScrollingEnabled="false" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvViewTermsFooter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center"
+                    android:padding="6dp"
+                    android:text="Terms &amp; Conditions • No Liability Disclaimer"
+                    android:textColor="#64748B"
+                    android:textSize="12sp" />
+
+                <com.google.android.gms.ads.AdView
+                    android:id="@+id/adViewBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    ads:adSize="BANNER"
+                    ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
             </LinearLayout>
-        </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
 
-        <!-- Search Section -->
-        <LinearLayout
-            android:id="@+id/layoutSearchSection"
-            android:layout_width="match_parent"
+    <!-- Branded Logo Loading Overlay when Comparing Prices -->
+    <LinearLayout
+        android:id="@+id/layoutLoadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#E60B132B"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/ivLoadingLogo"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:contentDescription="FareSwoop loading logo"
+            android:src="@drawable/ic_launcher_foreground" />
+
+        <ProgressBar
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupCategory"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCatCar"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="Car Hire" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCatHotel"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Hotels" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCatFlight"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Flights" />
-            </com.google.android.material.chip.ChipGroup>
-
-            <AutoCompleteTextView
-                android:id="@+id/etFlightOrigin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:completionThreshold="1"
-                android:hint="Type departure airport (e.g. Bristol)"
-                android:inputType="text"
-                android:visibility="gone" />
-
-            <AutoCompleteTextView
-                android:id="@+id/etPrimaryLocation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:completionThreshold="1"
-                android:hint="Type airport, town or city (e.g. Alicante)"
-                android:inputType="text" />
-
-            <Button
-                android:id="@+id/btnPickCollectionDateTime"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="start|center_vertical"
-                android:text="Collect: Select date &amp; time" />
-
-            <Button
-                android:id="@+id/btnPickReturnDateTime"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="start|center_vertical"
-                android:text="Return: Select date &amp; time" />
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipsCarFilters"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCarFreeCancel"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Free Cancellation" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCarAutoOnly"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Automatic Only" />
-            </com.google.android.material.chip.ChipGroup>
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipsHotelFilters"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:visibility="gone">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipHotelFreeCancel"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Free Cancellation" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipHotelBreakfast"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Breakfast Included" />
-            </com.google.android.material.chip.ChipGroup>
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipsFlightFilters"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:visibility="gone">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipFlightDirect"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Direct Flights Only" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipFlightCabinBag"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Cabin Bag Included" />
-            </com.google.android.material.chip.ChipGroup>
-
-            <Button
-                android:id="@+id/btnSearchOffers"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Compare Car Hire Prices" />
-
-            <Button
-                android:id="@+id/btnClearSearch"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Clear Search" />
-
-            <TextView
-                android:id="@+id/tvResultsHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="Showing deals"
-                android:textColor="#475569"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvOffers"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:nestedScrollingEnabled="false" />
-        </LinearLayout>
-
-        <!-- Watchlist Section -->
-        <LinearLayout
-            android:id="@+id/layoutWatchlistSection"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <Button
-                android:id="@+id/btnRunInstantCheck"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Run Live Price Check Now" />
-
-            <TextView
-                android:id="@+id/tvEmptyWatchlist"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="No active price watchers yet. Search and tap Track Price to arm alerts." />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvWatchlist"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:nestedScrollingEnabled="false" />
-        </LinearLayout>
+            android:layout_marginTop="16dp" />
 
         <TextView
-            android:id="@+id/tvViewTermsFooter"
-            android:layout_width="match_parent"
+            android:id="@+id/tvLoadingMessage"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="12dp"
             android:gravity="center"
-            android:padding="6dp"
-            android:text="Terms &amp; Conditions • No Liability Disclaimer"
-            android:textColor="#64748B"
-            android:textSize="12sp" />
-
-        <com.google.android.gms.ads.AdView
-            android:id="@+id/adViewBanner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            ads:adSize="BANNER"
-            ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
-
+            android:text="Swooping for the best prices..."
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
-</ScrollView>
+</FrameLayout>
