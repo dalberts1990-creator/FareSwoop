@@ -1,5 +1,6 @@
 package com.fareswoop.app
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -38,20 +39,12 @@ class DropAlertActivity : AppCompatActivity() {
 
         binding.btnRebookNow.setOnClickListener {
             val url = booking?.bookingUrl ?: return@setOnClickListener
-            CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(url))
+            openUrlSafely(url)
         }
 
         binding.btnCancelOldBooking.setOnClickListener {
-            val item = booking ?: return@setOnClickListener
-            if (item.alertEmail.isNotBlank()) {
-                try {
-                    startActivity(PriceCheckWorker.buildEmailAlertIntent(item, item.savingsGbp))
-                } catch (_: Exception) {
-                    Toast.makeText(this, "No email app configured on device", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                CustomTabsIntent.Builder().build().launchUrl(this, Uri.parse(item.bookingUrl))
-            }
+            val url = booking?.bookingUrl ?: return@setOnClickListener
+            openUrlSafely(url)
         }
 
         binding.btnUpdateTargetPrice.setOnClickListener {
@@ -71,26 +64,30 @@ class DropAlertActivity : AppCompatActivity() {
         binding.btnBackHome.setOnClickListener { finish() }
     }
 
+    private fun openUrlSafely(url: String) {
+        val uri = Uri.parse(url)
+        try {
+            CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(this, uri)
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, uri))
+            } catch (_: Exception) {
+                Toast.makeText(this, "Could not open browser link", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun bindBooking(item: TrackedBooking) {
         val savings = item.savingsGbp
         binding.tvDropHeadline.text = String.format(Locale.UK, "Save £%.2f Now", savings)
         binding.tvDropSubhead.text = item.title
-        val emailLine = if (item.alertEmail.isNotBlank()) {
-            "Alert Email: ${item.alertEmail}\n"
-        } else {
-            ""
-        }
         binding.tvPriceComparison.text = String.format(
             Locale.UK,
-            "%sOriginal Booked Price: £%.2f\nNew Live Rate: £%.2f\nCancellation Window: %s\n\nReminder: Confirm your new booking first and verify free cancellation rules before cancelling your original reservation.",
-            emailLine,
+            "Original Booked Price: £%.2f\nNew Live Rate: £%.2f\nCancellation Window: %s\n\nReminder: Confirm your new booking first and verify free cancellation rules before cancelling your original reservation.",
             item.bookedPriceGbp,
             item.latestPriceGbp,
             item.freeCancelDeadline
         )
-        if (item.alertEmail.isNotBlank()) {
-            binding.btnCancelOldBooking.text = "2. Send Alert Email to ${item.alertEmail}"
-        }
     }
 
     companion object {
