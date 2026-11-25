@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -72,13 +71,13 @@ class PriceCheckWorker(
         )
         val body = String.format(
             Locale.UK,
-            "%s dropped from £%.2f to £%.2f. Tap to rebook & email alert.",
+            "%s dropped from £%.2f to £%.2f. Tap to view deal.",
             booking.title,
             booking.bookedPriceGbp,
             booking.latestPriceGbp
         )
 
-        val builder = NotificationCompat.Builder(
+        val notification = NotificationCompat.Builder(
             applicationContext,
             FareSwoopApp.CHANNEL_PRICE_DROPS
         )
@@ -89,62 +88,14 @@ class PriceCheckWorker(
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-
-        if (booking.alertEmail.isNotBlank()) {
-            val emailIntent = buildEmailAlertIntent(booking, dropAmount)
-            val emailPendingIntent = PendingIntent.getActivity(
-                applicationContext,
-                booking.id.toInt() + 10000,
-                emailIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.addAction(
-                android.R.drawable.ic_dialog_email,
-                "Email ${booking.alertEmail}",
-                emailPendingIntent
-            )
-        }
+            .build()
 
         NotificationManagerCompat.from(applicationContext)
-            .notify(booking.id.toInt(), builder.build())
+            .notify(booking.id.toInt(), notification)
     }
 
     companion object {
         private const val WORK_NAME = "fareswoop_periodic_price_check"
-
-        fun buildEmailAlertIntent(booking: TrackedBooking, dropAmount: Double): Intent {
-            val subject = String.format(
-                Locale.UK,
-                "FareSwoop Price Drop: Save £%.2f on %s",
-                dropAmount,
-                booking.title
-            )
-            val body = String.format(
-                Locale.UK,
-                "Hi,\n\nFareSwoop detected a better rate for your tracked %s booking:\n\n" +
-                    "Trip: %s\n" +
-                    "Dates: %s\n" +
-                    "Original Booked Price: £%.2f\n" +
-                    "New Lower Rate: £%.2f\n" +
-                    "Potential Saving: £%.2f\n\n" +
-                    "Book the lower rate directly here:\n%s\n\n" +
-                    "— FareSwoop Price Watcher",
-                booking.category,
-                booking.title,
-                booking.dateRange,
-                booking.bookedPriceGbp,
-                booking.latestPriceGbp,
-                dropAmount,
-                booking.bookingUrl
-            )
-            return Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:")
-                putExtra(Intent.EXTRA_EMAIL, arrayOf(booking.alertEmail))
-                putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, body)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-        }
 
         fun schedulePeriodicChecks(context: Context, intervalHours: Long = 12L) {
             val safeHours = intervalHours.coerceAtLeast(1L)
