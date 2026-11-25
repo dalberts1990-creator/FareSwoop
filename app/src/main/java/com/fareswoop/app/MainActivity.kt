@@ -7,10 +7,13 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Patterns
+import android.os.Handler
+import android.os.Looper
 import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -51,6 +54,14 @@ class MainActivity : AppCompatActivity() {
     private var pendingOfferAfterBrowser: TravelOffer? = null
     private var selectedCategory = "CAR"
     private var currentMode = ScreenMode.HOME
+
+    private var adultsCount = 2
+    private var childrenCount = 0
+    private var roomsCount = 1
+    private var cabinIndex = 0
+    private val cabinClasses = listOf("Economy", "Premium Economy", "Business", "First")
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private val collectCalendar: Calendar = Calendar.getInstance().apply {
         add(Calendar.DAY_OF_YEAR, 14)
@@ -119,6 +130,7 @@ class MainActivity : AppCompatActivity() {
 
         refreshProAndAdsState()
         setupDateTimePickers()
+        setupPartyAndTicketControls()
         setupNavigationAndHomepage()
         setupFilterListeners()
         setupLists()
@@ -131,7 +143,7 @@ class MainActivity : AppCompatActivity() {
             swipeDetector.onTouchEvent(event)
             false
         }
-        binding.layoutMainContainer.setOnTouchListener { _, event ->
+        binding.layoutScrollContent.setOnTouchListener { _, event ->
             swipeDetector.onTouchEvent(event)
             false
         }
@@ -142,6 +154,33 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
+    private fun updateTabHighlights() {
+        val activePurple = Color.parseColor("#6750A4")
+        val whiteText = Color.WHITE
+        val inactiveBg = Color.parseColor("#F8FAFC")
+        val inactiveText = Color.parseColor("#334155")
+        val borderColor = Color.parseColor("#CBD5E1")
+
+        val tabs = listOf(
+            ScreenMode.HOME to binding.btnModeHome,
+            ScreenMode.SEARCH to binding.btnModeSearch,
+            ScreenMode.WATCHLIST to binding.btnModeWatchlist
+        )
+
+        for ((mode, btn) in tabs) {
+            if (currentMode == mode) {
+                btn.backgroundTintList = ColorStateList.valueOf(activePurple)
+                btn.setTextColor(whiteText)
+                btn.strokeWidth = 0
+            } else {
+                btn.backgroundTintList = ColorStateList.valueOf(inactiveBg)
+                btn.setTextColor(inactiveText)
+                btn.strokeColor = ColorStateList.valueOf(borderColor)
+                btn.strokeWidth = (1 * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+            }
+        }
+    }
+
     private fun switchScreenMode(mode: ScreenMode) {
         currentMode = mode
         binding.layoutHomeSection.visibility =
@@ -150,6 +189,7 @@ class MainActivity : AppCompatActivity() {
             if (mode == ScreenMode.SEARCH) View.VISIBLE else View.GONE
         binding.layoutWatchlistSection.visibility =
             if (mode == ScreenMode.WATCHLIST) View.VISIBLE else View.GONE
+        updateTabHighlights()
         binding.scrollMainRoot.smoothScrollTo(0, 0)
     }
 
@@ -189,6 +229,65 @@ class MainActivity : AppCompatActivity() {
                 binding.cardPostBookingBanner.visibility = View.GONE
             }
         }
+    }
+
+    private fun setupPartyAndTicketControls() {
+        updatePartyLabels()
+
+        binding.btnAdultsMinus.setOnClickListener {
+            if (adultsCount > 1) {
+                adultsCount--
+                updatePartyLabels()
+                runActiveSearch()
+            }
+        }
+        binding.btnAdultsPlus.setOnClickListener {
+            if (adultsCount < 9) {
+                adultsCount++
+                updatePartyLabels()
+                runActiveSearch()
+            }
+        }
+        binding.btnChildrenMinus.setOnClickListener {
+            if (childrenCount > 0) {
+                childrenCount--
+                updatePartyLabels()
+                runActiveSearch()
+            }
+        }
+        binding.btnChildrenPlus.setOnClickListener {
+            if (childrenCount < 8) {
+                childrenCount++
+                updatePartyLabels()
+                runActiveSearch()
+            }
+        }
+        binding.btnRoomsMinus.setOnClickListener {
+            if (roomsCount > 1) {
+                roomsCount--
+                updatePartyLabels()
+                runActiveSearch()
+            }
+        }
+        binding.btnRoomsPlus.setOnClickListener {
+            if (roomsCount < 6) {
+                roomsCount++
+                updatePartyLabels()
+                runActiveSearch()
+            }
+        }
+        binding.btnCabinClass.setOnClickListener {
+            cabinIndex = (cabinIndex + 1) % cabinClasses.size
+            updatePartyLabels()
+            runActiveSearch()
+        }
+    }
+
+    private fun updatePartyLabels() {
+        binding.tvAdultsCount.text = "Adults: $adultsCount"
+        binding.tvChildrenCount.text = "Children: $childrenCount"
+        binding.tvRoomsCount.text = "Rooms: $roomsCount"
+        binding.btnCabinClass.text = "Ticket Class: ${cabinClasses[cabinIndex]} (Tap to change)"
     }
 
     private fun setupDateTimePickers() {
@@ -335,6 +434,8 @@ class MainActivity : AppCompatActivity() {
             "HOTEL" -> {
                 binding.etFlightOrigin.visibility = View.GONE
                 binding.etPrimaryLocation.hint = "Type hotel area or town (e.g. Alicante)"
+                binding.layoutRoomsSelector.visibility = View.VISIBLE
+                binding.btnCabinClass.visibility = View.GONE
                 binding.chipsCarFilters.visibility = View.GONE
                 binding.chipsHotelFilters.visibility = View.VISIBLE
                 binding.chipsFlightFilters.visibility = View.GONE
@@ -343,6 +444,8 @@ class MainActivity : AppCompatActivity() {
             "FLIGHT" -> {
                 binding.etFlightOrigin.visibility = View.VISIBLE
                 binding.etPrimaryLocation.hint = "Type arrival airport (e.g. Alicante)"
+                binding.layoutRoomsSelector.visibility = View.GONE
+                binding.btnCabinClass.visibility = View.VISIBLE
                 binding.chipsCarFilters.visibility = View.GONE
                 binding.chipsHotelFilters.visibility = View.GONE
                 binding.chipsFlightFilters.visibility = View.VISIBLE
@@ -351,6 +454,8 @@ class MainActivity : AppCompatActivity() {
             else -> {
                 binding.etFlightOrigin.visibility = View.GONE
                 binding.etPrimaryLocation.hint = "Type car hire airport or city (e.g. Alicante)"
+                binding.layoutRoomsSelector.visibility = View.GONE
+                binding.btnCabinClass.visibility = View.GONE
                 binding.chipsCarFilters.visibility = View.VISIBLE
                 binding.chipsHotelFilters.visibility = View.GONE
                 binding.chipsFlightFilters.visibility = View.GONE
@@ -411,6 +516,12 @@ class MainActivity : AppCompatActivity() {
     private fun clearSearchToLandingState() {
         binding.etFlightOrigin.setText("")
         binding.etPrimaryLocation.setText("")
+        adultsCount = 2
+        childrenCount = 0
+        roomsCount = 1
+        cabinIndex = 0
+        updatePartyLabels()
+
         binding.chipCarFreeCancel.isChecked = false
         binding.chipCarAutoOnly.isChecked = false
         binding.chipHotelFreeCancel.isChecked = false
@@ -428,7 +539,21 @@ class MainActivity : AppCompatActivity() {
 
         applyCategoryState("CAR", runSearch = true)
         switchScreenMode(ScreenMode.HOME)
-        Toast.makeText(this, "Returned to FareSwoop homepage", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Search cleared — back on FareSwoop Home", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun triggerCompareWithLogoLoading() {
+        binding.tvLoadingMessage.text = "Searching ${selectedCategory.lowercase()} retailers & comparison sites..."
+        binding.layoutLoadingOverlay.visibility = View.VISIBLE
+        mainHandler.postDelayed({
+            runActiveSearch()
+            binding.layoutLoadingOverlay.visibility = View.GONE
+            Toast.makeText(
+                this,
+                "Updated $selectedCategory deals for ${getFormattedDateRange()}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }, 650L)
     }
 
     private fun ensureNotificationPermission() {
@@ -526,12 +651,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupSearchControls() {
         binding.btnSearchOffers.setOnClickListener {
-            runActiveSearch()
-            Toast.makeText(
-                this,
-                "Showing $selectedCategory deals for ${getFormattedDateRange()}",
-                Toast.LENGTH_SHORT
-            ).show()
+            triggerCompareWithLogoLoading()
         }
 
         binding.btnClearSearch.setOnClickListener {
@@ -541,7 +661,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnRunInstantCheck.setOnClickListener {
             val oneTime = OneTimeWorkRequestBuilder<PriceCheckWorker>().build()
             WorkManager.getInstance(this).enqueue(oneTime)
-            Toast.makeText(this, "Scanning live rates & preparing alerts...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Scanning live rates for app notifications...", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -549,12 +669,16 @@ class MainActivity : AppCompatActivity() {
         val location = binding.etPrimaryLocation.text.toString().trim()
         val startIso = isoDateFormatter.format(collectCalendar.time)
         val endIso = isoDateFormatter.format(returnCalendar.time)
+        val selectedCabin = cabinClasses[cabinIndex]
 
         val results = when (selectedCategory) {
             "HOTEL" -> TravelSearchRepository.searchHotels(
                 destination = location,
                 checkInIso = startIso,
                 checkOutIso = endIso,
+                adults = adultsCount,
+                children = childrenCount,
+                rooms = roomsCount,
                 breakfastIncludedOnly = binding.chipHotelBreakfast.isChecked,
                 freeCancelOnly = binding.chipHotelFreeCancel.isChecked
             )
@@ -563,6 +687,9 @@ class MainActivity : AppCompatActivity() {
                 destination = location,
                 outboundDateIso = startIso,
                 inboundDateIso = endIso,
+                adults = adultsCount,
+                children = childrenCount,
+                cabinClass = selectedCabin,
                 directOnly = binding.chipFlightDirect.isChecked,
                 cabinBagOnly = binding.chipFlightCabinBag.isChecked
             )
@@ -570,6 +697,8 @@ class MainActivity : AppCompatActivity() {
                 pickupLocation = location,
                 pickupDateIso = startIso,
                 returnDateIso = endIso,
+                adults = adultsCount,
+                children = childrenCount,
                 automaticOnly = binding.chipCarAutoOnly.isChecked,
                 freeCancelOnly = binding.chipCarFreeCancel.isChecked
             )
@@ -577,42 +706,6 @@ class MainActivity : AppCompatActivity() {
         offerAdapter.submitList(results)
         binding.tvResultsHeader.text =
             "Showing ${results.size} $selectedCategory deals • ${getFormattedDateRange()}"
-    }
-
-    private fun sendTrackingConfirmationEmail(
-        email: String,
-        tracker: TrackedBooking
-    ) {
-        val subject = "FareSwoop Tracking Active: ${tracker.title}"
-        val body = String.format(
-            Locale.UK,
-            "Hi,\n\nYour FareSwoop price watcher is now active.\n\n" +
-                "Category: %s\n" +
-                "Booking: %s\n" +
-                "Dates: %s\n" +
-                "Supplier: %s\n" +
-                "Booked Price: £%.2f\n" +
-                "Check Interval: Every %dh\n\n" +
-                "We will notify you in the app and prepare an email alert if a lower rate is spotted.\n\n" +
-                "— FareSwoop",
-            tracker.category,
-            tracker.title,
-            tracker.dateRange,
-            tracker.supplierName,
-            tracker.bookedPriceGbp,
-            tracker.checkIntervalHours
-        )
-        val intent = Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:")
-            putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
-            putExtra(Intent.EXTRA_SUBJECT, subject)
-            putExtra(Intent.EXTRA_TEXT, body)
-        }
-        try {
-            startActivity(intent)
-        } catch (_: Exception) {
-            Toast.makeText(this, "Watcher saved; no email app found to send confirmation", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun showArmWatcherSheet(offer: TravelOffer) {
@@ -643,12 +736,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         sheetBinding.btnActivateWatcher.setOnClickListener {
-            val email = sheetBinding.etAlertEmail.text.toString().trim()
-            if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                sheetBinding.etAlertEmail.error = "Enter a valid email address for alerts"
-                return@setOnClickListener
-            }
-
             val bookedPrice = sheetBinding.etBookedPrice.text.toString().toDoubleOrNull()
                 ?: offer.totalPriceGbp
             val cancelDeadline = sheetBinding.etCancelDeadline.text.toString().trim()
@@ -688,15 +775,19 @@ class MainActivity : AppCompatActivity() {
                     minDropThresholdGbp = 10.0,
                     sameSupplierOnly = sheetBinding.switchSameSupplier.isChecked,
                     freeCancelDeadline = cancelDeadline,
-                    alertEmail = email,
                     checkIntervalHours = effectiveInterval
                 )
                 dao.insert(tracker)
                 PriceCheckWorker.schedulePeriodicChecks(this@MainActivity, effectiveInterval)
 
+                Toast.makeText(
+                    this@MainActivity,
+                    "App price alert armed! Checking every ${effectiveInterval}h.",
+                    Toast.LENGTH_LONG
+                ).show()
+
                 dialog.dismiss()
                 switchScreenMode(ScreenMode.WATCHLIST)
-                sendTrackingConfirmationEmail(email, tracker)
             }
         }
 
@@ -809,8 +900,7 @@ class WatchlistAdapter(
             onDeleteClick: (TrackedBooking) -> Unit
         ) {
             binding.tvWatchTitle.text = "[${item.category}] ${item.title}"
-            val emailInfo = if (item.alertEmail.isNotBlank()) " • ${item.alertEmail}" else ""
-            binding.tvWatchDates.text = "${item.dateRange} • ${item.supplierName}$emailInfo"
+            binding.tvWatchDates.text = "${item.dateRange} • ${item.supplierName}"
             binding.tvBookedVsLive.text = String.format(
                 Locale.UK,
                 "Booked: £%.2f  →  Live: £%.2f",
