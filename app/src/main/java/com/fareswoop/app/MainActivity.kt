@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
@@ -79,6 +80,7 @@ class MainActivity : AppCompatActivity() {
     private val dateOnlyFormatter = SimpleDateFormat("dd MMM yyyy", Locale.UK)
     private val compactDateFormatter = SimpleDateFormat("dd MMM", Locale.UK)
     private val isoDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.UK)
+    private val timeOnlyFormatter = SimpleDateFormat("HH:mm", Locale.UK)
 
     private val requestNotifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -217,9 +219,8 @@ class MainActivity : AppCompatActivity() {
             binding.cardPostBookingBanner.visibility = View.VISIBLE
             binding.tvPostBookingPrompt.text = String.format(
                 Locale.UK,
-                "Did you book %s for £%.2f?",
-                offer.primaryTitle,
-                offer.totalPriceGbp
+                "Did you book %s? Enter your exact checkout price to track drops.",
+                offer.primaryTitle
             )
             binding.btnConfirmBooked.setOnClickListener {
                 binding.cardPostBookingBanner.visibility = View.GONE
@@ -296,18 +297,18 @@ class MainActivity : AppCompatActivity() {
         binding.btnPickCollectionDateTime.setOnClickListener {
             if (selectedCategory == "HOTEL") {
                 pickDateOnly(collectCalendar) {
-                    if (returnCalendar.before(collectCalendar)) {
+                    if (!returnCalendar.after(collectCalendar)) {
                         returnCalendar.timeInMillis =
-                            collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
+                            collectCalendar.timeInMillis + TimeUnit.DAYS.toMillis(1)
                     }
                     updateDateTimeButtons()
                     runActiveSearch()
                 }
             } else {
                 pickDateAndTime(collectCalendar) {
-                    if (returnCalendar.before(collectCalendar)) {
+                    if (!returnCalendar.after(collectCalendar)) {
                         returnCalendar.timeInMillis =
-                            collectCalendar.timeInMillis + (7L * 24L * 60L * 60L * 1000L)
+                            collectCalendar.timeInMillis + TimeUnit.DAYS.toMillis(1)
                     }
                     updateDateTimeButtons()
                     runActiveSearch()
@@ -318,11 +319,19 @@ class MainActivity : AppCompatActivity() {
         binding.btnPickReturnDateTime.setOnClickListener {
             if (selectedCategory == "HOTEL") {
                 pickDateOnly(returnCalendar) {
+                    if (!returnCalendar.after(collectCalendar)) {
+                        returnCalendar.timeInMillis =
+                            collectCalendar.timeInMillis + TimeUnit.DAYS.toMillis(1)
+                    }
                     updateDateTimeButtons()
                     runActiveSearch()
                 }
             } else {
                 pickDateAndTime(returnCalendar) {
+                    if (!returnCalendar.after(collectCalendar)) {
+                        returnCalendar.timeInMillis =
+                            collectCalendar.timeInMillis + TimeUnit.DAYS.toMillis(1)
+                    }
                     updateDateTimeButtons()
                     runActiveSearch()
                 }
@@ -394,6 +403,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getSelectedDaysOrNights(): Int {
+        val diffMillis = returnCalendar.timeInMillis - collectCalendar.timeInMillis
+        return TimeUnit.MILLISECONDS.toDays(diffMillis).toInt().coerceAtLeast(1)
+    }
+
     private fun getFormattedDateRange(): String {
         return "${compactDateFormatter.format(collectCalendar.time)} → ${compactDateFormatter.format(returnCalendar.time)}"
     }
@@ -433,7 +447,8 @@ class MainActivity : AppCompatActivity() {
         when (category) {
             "HOTEL" -> {
                 binding.etFlightOrigin.visibility = View.GONE
-                binding.etPrimaryLocation.hint = "Type hotel area or town (e.g. Alicante)"
+                binding.etPrimaryLocation.hint = "Type hotel town or city (e.g. Saltash)"
+                binding.layoutPartySelector.visibility = View.VISIBLE
                 binding.layoutRoomsSelector.visibility = View.VISIBLE
                 binding.btnCabinClass.visibility = View.GONE
                 binding.chipsCarFilters.visibility = View.GONE
@@ -444,6 +459,7 @@ class MainActivity : AppCompatActivity() {
             "FLIGHT" -> {
                 binding.etFlightOrigin.visibility = View.VISIBLE
                 binding.etPrimaryLocation.hint = "Type arrival airport (e.g. Alicante)"
+                binding.layoutPartySelector.visibility = View.VISIBLE
                 binding.layoutRoomsSelector.visibility = View.GONE
                 binding.btnCabinClass.visibility = View.VISIBLE
                 binding.chipsCarFilters.visibility = View.GONE
@@ -453,7 +469,8 @@ class MainActivity : AppCompatActivity() {
             }
             else -> {
                 binding.etFlightOrigin.visibility = View.GONE
-                binding.etPrimaryLocation.hint = "Type car hire airport or city (e.g. Alicante)"
+                binding.etPrimaryLocation.hint = "Type car hire airport or town (e.g. Saltash)"
+                binding.layoutPartySelector.visibility = View.GONE
                 binding.layoutRoomsSelector.visibility = View.GONE
                 binding.btnCabinClass.visibility = View.GONE
                 binding.chipsCarFilters.visibility = View.VISIBLE
@@ -529,11 +546,11 @@ class MainActivity : AppCompatActivity() {
         binding.chipFlightDirect.isChecked = false
         binding.chipFlightCabinBag.isChecked = false
 
-        collectCalendar.timeInMillis = System.currentTimeMillis() + (14L * 24L * 60L * 60L * 1000L)
+        collectCalendar.timeInMillis = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(14)
         collectCalendar.set(Calendar.HOUR_OF_DAY, 10)
         collectCalendar.set(Calendar.MINUTE, 0)
 
-        returnCalendar.timeInMillis = System.currentTimeMillis() + (21L * 24L * 60L * 60L * 1000L)
+        returnCalendar.timeInMillis = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(21)
         returnCalendar.set(Calendar.HOUR_OF_DAY, 10)
         returnCalendar.set(Calendar.MINUTE, 0)
 
@@ -543,14 +560,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun triggerCompareWithLogoLoading() {
-        binding.tvLoadingMessage.text = "Searching ${selectedCategory.lowercase()} retailers & comparison sites..."
+        val placeLabel = binding.etPrimaryLocation.text.toString().trim().ifBlank { "your location" }
+        binding.tvLoadingMessage.text = "Searching $placeLabel across major providers..."
         binding.layoutLoadingOverlay.visibility = View.VISIBLE
         mainHandler.postDelayed({
             runActiveSearch()
             binding.layoutLoadingOverlay.visibility = View.GONE
             Toast.makeText(
                 this,
-                "Updated $selectedCategory deals for ${getFormattedDateRange()}",
+                "Updated $selectedCategory deals for $placeLabel (${getFormattedDateRange()})",
                 Toast.LENGTH_SHORT
             ).show()
         }, 650L)
@@ -669,6 +687,9 @@ class MainActivity : AppCompatActivity() {
         val location = binding.etPrimaryLocation.text.toString().trim()
         val startIso = isoDateFormatter.format(collectCalendar.time)
         val endIso = isoDateFormatter.format(returnCalendar.time)
+        val pickupTime = timeOnlyFormatter.format(collectCalendar.time)
+        val returnTime = timeOnlyFormatter.format(returnCalendar.time)
+        val daysOrNights = getSelectedDaysOrNights()
         val selectedCabin = cabinClasses[cabinIndex]
 
         val results = when (selectedCategory) {
@@ -676,6 +697,7 @@ class MainActivity : AppCompatActivity() {
                 destination = location,
                 checkInIso = startIso,
                 checkOutIso = endIso,
+                nightsCount = daysOrNights,
                 adults = adultsCount,
                 children = childrenCount,
                 rooms = roomsCount,
@@ -696,16 +718,18 @@ class MainActivity : AppCompatActivity() {
             else -> TravelSearchRepository.searchCars(
                 pickupLocation = location,
                 pickupDateIso = startIso,
+                pickupTime = pickupTime,
                 returnDateIso = endIso,
-                adults = adultsCount,
-                children = childrenCount,
+                returnTime = returnTime,
+                rentalDays = daysOrNights,
                 automaticOnly = binding.chipCarAutoOnly.isChecked,
                 freeCancelOnly = binding.chipCarFreeCancel.isChecked
             )
         }
         offerAdapter.submitList(results)
+        val displayPlace = location.ifBlank { "default location" }
         binding.tvResultsHeader.text =
-            "Showing ${results.size} $selectedCategory deals • ${getFormattedDateRange()}"
+            "Showing ${results.size} $selectedCategory deals for $displayPlace • ${getFormattedDateRange()}"
     }
 
     private fun showArmWatcherSheet(offer: TravelOffer) {
@@ -713,7 +737,6 @@ class MainActivity : AppCompatActivity() {
         val sheetBinding = BottomSheetArmWatcherBinding.inflate(layoutInflater)
         dialog.setContentView(sheetBinding.root)
 
-        val location = binding.etPrimaryLocation.text.toString().trim()
         val dates = getFormattedDateRange()
 
         sheetBinding.switchSameSupplier.text = when (offer.category) {
@@ -722,14 +745,9 @@ class MainActivity : AppCompatActivity() {
             else -> "Same supplier only (off = any equal/better car)"
         }
 
-        val summaryTitle = if (offer.category == "FLIGHT") {
-            "${offer.primaryTitle} ($dates)"
-        } else {
-            val locPrefix = if (location.isNotBlank()) "$location • " else ""
-            "$locPrefix${offer.primaryTitle}"
-        }
+        val summaryTitle = "${offer.primaryTitle} ($dates)"
 
-        sheetBinding.tvSheetSummary.text = "$summaryTitle • $dates"
+        sheetBinding.tvSheetSummary.text = summaryTitle
         sheetBinding.etBookedPrice.setText(String.format(Locale.UK, "%.2f", offer.totalPriceGbp))
         sheetBinding.etCancelDeadline.setText(
             if (offer.freeCancellation) "Free cancellation active" else "Check fare rules"
@@ -777,12 +795,14 @@ class MainActivity : AppCompatActivity() {
                     freeCancelDeadline = cancelDeadline,
                     checkIntervalHours = effectiveInterval
                 )
-                dao.insert(tracker)
+                val insertedId = dao.insert(tracker)
+                val savedTracker = tracker.copy(id = insertedId)
                 PriceCheckWorker.schedulePeriodicChecks(this@MainActivity, effectiveInterval)
+                PriceCheckWorker.sendWatchActivatedNotification(this@MainActivity, savedTracker)
 
                 Toast.makeText(
                     this@MainActivity,
-                    "App price alert armed! Checking every ${effectiveInterval}h.",
+                    "Watch alert active! Confirmation notification sent.",
                     Toast.LENGTH_LONG
                 ).show()
 
@@ -861,7 +881,7 @@ class TravelOfferAdapter(
             binding.tvSpecs.text = offer.detailsSummary
             binding.tvCancelBadge.text =
                 if (offer.freeCancellation) "Free Cancellation" else "Standard Policy"
-            binding.tvTotalPrice.text = String.format(Locale.UK, "£%.2f total", offer.totalPriceGbp)
+            binding.tvTotalPrice.text = String.format(Locale.UK, "Est. £%.2f total", offer.totalPriceGbp)
             binding.tvDailyPrice.text = offer.unitPriceLabel
 
             binding.btnBookBrowser.setOnClickListener { onBookClick(offer) }
